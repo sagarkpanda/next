@@ -1,40 +1,36 @@
-"use client";
+import { Suspense } from "react";
+import { getCollection } from "@/lib/content";
+import SearchPageClient from "@/components/SearchPageClient";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { getSearchIndex } from "@/lib/search";
+export const dynamic = "force-static";
 
 export default function SearchPage() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("q") ?? "";
-  const [search, setSearch] = useState(query);
+  const posts = getCollection("blogs");
+  const projects = getCollection("projects");
 
-  useEffect(() => {
-    setSearch(query);
-  }, [query]);
-
-  const results = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
-    if (!q) return [];
-
-    return getSearchIndex().filter((item) => {
-      const haystack = [
-        item.title,
-        item.description,
-        item.content,
-        ...(item.tags ?? []),
-        ...(item.categories ?? []),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(q);
-    });
-  }, [search]);
+  const items = [
+    ...posts.map((item) => ({
+      title: item.data.title ?? "",
+      summary: item.data.summary ?? "",
+      tags: item.data.tags ?? [],
+      route: item.route,
+      kind: "blog" as const,
+    })),
+    ...projects.map((item) => ({
+      title: item.data.title ?? "",
+      summary: item.data.summary ?? "",
+      tags: item.data.tags ?? [],
+      route: item.route,
+      kind: "project" as const,
+    })),
+  ];
 
   return (
+    <Suspense fallback={<main className="shell page-shell" />}>
+      <SearchPageClient items={items} />
+    </Suspense>
+  );
+}  return (
     <main className="mx-auto max-w-6xl px-6 py-16">
       <div className="mb-10">
         <p className="mb-3 font-mono text-sm text-[var(--accent)]">
