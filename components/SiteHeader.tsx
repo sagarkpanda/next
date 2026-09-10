@@ -15,7 +15,6 @@ const links = [
   ["Blogs", "cd /blogs", "/blogs/"],
   ["Experience", "cd /experience", "/#experience"],
   ["Contact", "cd /contact", "/#contact"],
-  ["Resume", "cd /resume", "/resume/"],
 ] as const;
 
 export default function SiteHeader() {
@@ -30,8 +29,6 @@ export default function SiteHeader() {
         setActive(hash);
       } else if (window.location.pathname.startsWith("/blogs")) {
         setActive("blogs");
-      } else if (window.location.pathname.startsWith("/resume")) {
-        setActive("resume");
       } else {
         setActive("");
       }
@@ -72,7 +69,7 @@ export default function SiteHeader() {
 
         <nav className={open ? "mobile-nav open" : "mobile-nav"} aria-label="Main navigation">
           {links.map(([desktopLabel, mobileLabel, href]) => {
-            const key = desktopLabel === "Blogs" ? "blogs" : desktopLabel === "Resume" ? "resume" : href.replace("/#", "");
+            const key = desktopLabel === "Blogs" ? "blogs" : href.replace("/#", "");
             const isActive = active === key;
             return (
               <Link key={href} href={href} className={isActive ? "nav-active" : undefined} onClick={() => setOpen(false)}>

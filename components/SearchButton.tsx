@@ -23,7 +23,6 @@ const sections = [
   ["Education", "/#education"],
   ["Latest Writing", "/#blog"],
   ["Contact", "/#contact"],
-  ["Resume", "/resume/"],
   ["All Blog Posts", "/blogs/"],
 ] as const;
 
@@ -40,7 +39,10 @@ export default function SearchButton() {
         e.preventDefault();
         setOpen(true);
       }
-      if (e.key === "Escape") setOpen(false);
+
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
     };
 
     window.addEventListener("keydown", onKey);
@@ -59,10 +61,18 @@ export default function SearchButton() {
       .catch(() => setLoaded(true));
   }, [open, loaded]);
 
+  const closeSearch = () => {
+    setOpen(false);
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const q = query.trim();
-    if (q) router.push(`/search/?q=${encodeURIComponent(q)}`);
+    if (!q) return;
+
+    closeSearch();
+    router.push(`/search/?q=${encodeURIComponent(q)}`);
   };
 
   const normalized = query.trim().toLowerCase();
@@ -71,8 +81,10 @@ export default function SearchButton() {
     !normalized ? true : name.toLowerCase().includes(normalized),
   );
 
+  // The site search intentionally searches blog content only.
   const results = normalized
     ? index
+        .filter((item) => item.kind === "Blog")
         .filter((item) => {
           const haystack = [
             item.title,
@@ -101,11 +113,16 @@ export default function SearchButton() {
       </button>
 
       {open && (
-        <div className="search-overlay" role="dialog" aria-modal="true" aria-label="Search">
+        <div
+          className="search-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search"
+        >
           <button
             className="search-backdrop"
             aria-label="Close search"
-            onClick={() => setOpen(false)}
+            onClick={closeSearch}
           />
 
           <div className="search-dialog">
@@ -116,28 +133,50 @@ export default function SearchButton() {
 
               <button
                 className="icon-button"
-                onClick={() => setOpen(false)}
+                onClick={closeSearch}
                 aria-label="Close search"
+                type="button"
               >
                 <X size={16} />
               </button>
             </div>
 
             <form onSubmit={submit}>
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search posts, projects, technologies..."
-              />
+              <div className="search-input-wrap">
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search blog posts..."
+                  aria-label="Search blog posts"
+                />
+
+                {query && (
+                  <button
+                    type="button"
+                    className="search-clear"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    title="Clear search"
+                  >
+                    <X size={17} />
+                  </button>
+                )}
+              </div>
             </form>
 
             {!normalized ? (
               <div className="search-suggestions">
-                <div className="search-suggestions-title">jump to section</div>
+                <div className="search-suggestions-title">
+                  jump to section
+                </div>
 
                 {sections.map(([name, href]) => (
-                  <Link key={href} href={href} onClick={() => setOpen(false)}>
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={closeSearch}
+                  >
                     {name}
                     <span>↗</span>
                   </Link>
@@ -146,18 +185,20 @@ export default function SearchButton() {
             ) : (
               <div className="search-suggestions">
                 <div className="search-suggestions-title">
-                  {results.length ? "matching content" : "no matching content"}
+                  {results.length
+                    ? "matching blog posts"
+                    : "no matching blog posts"}
                 </div>
 
                 {results.map((item) => (
                   <Link
                     key={`${item.kind}-${item.route}`}
                     href={item.route}
-                    onClick={() => setOpen(false)}
+                    onClick={closeSearch}
                   >
                     <span>
                       {item.title}
-                      <small>{item.kind}</small>
+                      <small>Blog</small>
                     </span>
                     <span>↗</span>
                   </Link>
@@ -165,9 +206,16 @@ export default function SearchButton() {
 
                 {!results.length && filteredSections.length > 0 && (
                   <>
-                    <div className="search-suggestions-title">matching sections</div>
+                    <div className="search-suggestions-title">
+                      matching sections
+                    </div>
+
                     {filteredSections.map(([name, href]) => (
-                      <Link key={href} href={href} onClick={() => setOpen(false)}>
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={closeSearch}
+                      >
                         {name}
                         <span>↗</span>
                       </Link>
@@ -178,13 +226,9 @@ export default function SearchButton() {
                 <button
                   type="button"
                   className="search-all-button"
-                  onClick={() => {
-                    const q = query.trim();
-                    if (q) router.push(`/search/?q=${encodeURIComponent(q)}`);
-                    setOpen(false);
-                  }}
+                  onClick={submit}
                 >
-                  Search all results →
+                  Search all blog posts →
                 </button>
               </div>
             )}

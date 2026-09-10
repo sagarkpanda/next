@@ -33,7 +33,6 @@ export default function Home() {
             <p className="hero-copy">I build and operate cloud infrastructure, Kubernetes platforms, CI/CD systems, and secure delivery pipelines with AWS, Terraform, GitOps, and observability.</p>
             <div className="hero-actions">
               <Link href="/blogs/" className="button primary">read the blog</Link>
-              <Link href="/resume/" className="button">view resume</Link>
               <a href={`mailto:${site.email}`} className="button">contact me</a>
             </div>
             <div className="socials" aria-label="Social links">

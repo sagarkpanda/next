@@ -40,4 +40,4 @@ This is the fourth revision of the Sagar Panda portfolio, migrated to Next.js wi
 
 ## Search
 
-The site search index is generated automatically before each production build. It searches blog/project content, tags, categories, and homepage sections.
+The site search index is generated automatically before each production build. It searches blog posts only, including titles, descriptions, content, tags, and categories. Homepage section shortcuts remain available in the search modal.
