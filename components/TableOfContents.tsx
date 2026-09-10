@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export type Heading = {
   id: string;
@@ -30,7 +30,34 @@ export function extractHeadings(markdown: string): Heading[] {
   const headings: Heading[] = [];
   const slugCounts = new Map<string, number>();
 
+  let insideFence = false;
+  let fenceChar = "";
+
   for (const line of markdown.split("\n")) {
+    const trimmed = line.trim();
+
+    // Ignore headings inside fenced code blocks.
+    if (
+      trimmed.startsWith("```") ||
+      trimmed.startsWith("~~~")
+    ) {
+      const currentFence = trimmed.startsWith("```")
+        ? "```"
+        : "~~~";
+
+      if (!insideFence) {
+        insideFence = true;
+        fenceChar = currentFence;
+      } else if (currentFence === fenceChar) {
+        insideFence = false;
+        fenceChar = "";
+      }
+
+      continue;
+    }
+
+    if (insideFence) continue;
+
     const match = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
 
     if (!match) continue;
@@ -41,6 +68,7 @@ export function extractHeadings(markdown: string): Heading[] {
     if (!text) continue;
 
     const baseId = slugify(text) || "section";
+
     const count = slugCounts.get(baseId) ?? 0;
 
     slugCounts.set(baseId, count + 1);
@@ -66,7 +94,14 @@ export default function TableOfContents({
   headings: Heading[];
 }) {
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState("");
+
+  // The heading currently being read.
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  // The actual rendered heading text.
+  const [activeText, setActiveText] = useState(
+    "table of contents"
+  );
 
   useEffect(() => {
     if (!headings.length) return;
@@ -83,27 +118,46 @@ export default function TableOfContents({
 
       if (!elements.length) return;
 
+      /*
+       * The heading whose top has passed the reading line
+       * becomes the current section.
+       *
+       * This works while scrolling DOWN and UP.
+       */
       const offset = 130;
 
-      let activeIndex = 0;
+      let currentIndex = 0;
 
       for (let i = 0; i < elements.length; i++) {
-        const top = elements[i].getBoundingClientRect().top;
+        const top =
+          elements[i].getBoundingClientRect().top;
 
         if (top <= offset) {
-          activeIndex = i;
+          currentIndex = i;
         } else {
           break;
         }
       }
 
-      const activeHeading = headings[activeIndex];
+      const currentElement = elements[currentIndex];
 
-      if (activeHeading) {
-        setActiveId(activeHeading.id);
+      if (!currentElement) return;
+
+      setActiveIndex(currentIndex);
+
+      /*
+       * Use the actual rendered heading text rather than
+       * relying on the markdown heading parser.
+       */
+      const text =
+        currentElement.textContent?.trim() || "";
+
+      if (text) {
+        setActiveText(text);
       }
     };
 
+    // Set initial heading.
     updateActiveHeading();
 
     let ticking = false;
@@ -130,8 +184,15 @@ export default function TableOfContents({
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
     };
   }, [headings]);
 
@@ -139,8 +200,7 @@ export default function TableOfContents({
 
   function handleHeadingClick(
     event: React.MouseEvent<HTMLAnchorElement>,
-    index: number,
-    heading: Heading
+    index: number
   ) {
     event.preventDefault();
 
@@ -154,9 +214,6 @@ export default function TableOfContents({
 
     if (!element) return;
 
-    setActiveId(heading.id);
-    setOpen(false);
-
     const offset = 105;
 
     const top =
@@ -164,18 +221,38 @@ export default function TableOfContents({
       window.scrollY -
       offset;
 
+    /*
+     * Immediately make the clicked section the
+     * current TOC heading.
+     */
+    setActiveIndex(index);
+
+    setActiveText(
+      element.textContent?.trim() ||
+        headings[index]?.text ||
+        "table of contents"
+    );
+
+    /*
+     * Close the expanded TOC after selecting a heading.
+     */
+    setOpen(false);
+
     window.scrollTo({
       top,
       behavior: "smooth",
     });
 
-    const actualId = element.id || heading.id;
-
-    window.history.replaceState(
-      null,
-      "",
-      `#${actualId}`
-    );
+    /*
+     * Use the REAL rendered heading ID.
+     */
+    if (element.id) {
+      window.history.replaceState(
+        null,
+        "",
+        `#${element.id}`
+      );
+    }
   }
 
   return (
@@ -190,9 +267,16 @@ export default function TableOfContents({
         onClick={() => setOpen((value) => !value)}
       >
         <span className="toc-toggle-left">
-          <span className="toc-terminal">$</span>
+          <span
+            className="toc-terminal"
+            aria-hidden="true"
+          >
+            $
+          </span>
 
-          <span>table of contents</span>
+          <span className="toc-current-heading">
+            {activeText}
+          </span>
         </span>
 
         <span
@@ -217,7 +301,7 @@ export default function TableOfContents({
                   heading.level === 3
                     ? "toc-sub"
                     : "",
-                  activeId === heading.id
+                  activeIndex === index
                     ? "toc-active"
                     : "",
                 ]
@@ -226,8 +310,7 @@ export default function TableOfContents({
                 onClick={(event) =>
                   handleHeadingClick(
                     event,
-                    index,
-                    heading
+                    index
                   )
                 }
               >
@@ -235,7 +318,7 @@ export default function TableOfContents({
                   className="toc-active-marker"
                   aria-hidden="true"
                 >
-                  {activeId === heading.id
+                  {activeIndex === index
                     ? ">"
                     : ""}
                 </span>
