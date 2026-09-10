@@ -1,36 +1,68 @@
 import Link from "next/link";
-import { displayDate, getCollection, readingTime } from "@/lib/content";
-import type { ContentItem } from "@/types/content";
-import MarkdownContent from "@/components/MarkdownContent";
-import TableOfContents, { extractHeadings } from "@/components/TableOfContents";
+import {
+  displayDate,
+  getCollection,
+  readingTime,
+} from "@/lib/content";
 
-function RelatedPosts({ post }: { post: ContentItem }) {
-  const all = getCollection("blogs").filter((item) => item.route !== post.route);
-  const tags = new Set((post.data.tags ?? []).map((t) => t.toLowerCase()));
+import type { ContentItem } from "@/types/content";
+
+import MarkdownContent from "@/components/MarkdownContent";
+import TableOfContents, {
+  extractHeadings,
+} from "@/components/TableOfContents";
+
+function RelatedPosts({
+  post,
+}: {
+  post: ContentItem;
+}) {
+  const all = getCollection("blogs").filter(
+    (item) => item.route !== post.route
+  );
+
+  const tags = new Set(
+    (post.data.tags ?? []).map((t) =>
+      t.toLowerCase()
+    )
+  );
+
   const categories = new Set(
-    (post.data.categories ?? []).map((c) => c.toLowerCase())
+    (post.data.categories ?? []).map((c) =>
+      c.toLowerCase()
+    )
   );
 
   const related = all
     .map((item) => {
-      const tagScore = (item.data.tags ?? []).filter((t) =>
+      const tagScore = (
+        item.data.tags ?? []
+      ).filter((t) =>
         tags.has(t.toLowerCase())
       ).length;
 
-      const categoryScore = (item.data.categories ?? []).filter((c) =>
+      const categoryScore = (
+        item.data.categories ?? []
+      ).filter((c) =>
         categories.has(c.toLowerCase())
       ).length;
 
       return {
         item,
-        score: tagScore * 3 + categoryScore * 2,
+        score:
+          tagScore * 3 +
+          categoryScore * 2,
       };
     })
     .filter((x) => x.score > 0)
     .sort(
       (a, b) =>
         b.score - a.score ||
-        String(b.item.data.date).localeCompare(String(a.item.data.date))
+        String(
+          b.item.data.date
+        ).localeCompare(
+          String(a.item.data.date)
+        )
     )
     .slice(0, 3)
     .map((x) => x.item);
@@ -39,7 +71,9 @@ function RelatedPosts({ post }: { post: ContentItem }) {
 
   return (
     <section className="related-section">
-      <div className="command">$ grep -r "related" ~/blogs</div>
+      <div className="command">
+        $ grep -r "related" ~/blogs
+      </div>
 
       <h2>Related</h2>
 
@@ -50,12 +84,18 @@ function RelatedPosts({ post }: { post: ContentItem }) {
             href={item.route}
             className="related-card"
           >
-            <span>{displayDate(item.data.date)}</span>
+            <span>
+              {displayDate(item.data.date)}
+            </span>
 
-            <strong>{item.data.title}</strong>
+            <strong>
+              {item.data.title}
+            </strong>
 
             <small>
-              {item.data.summary || item.data.description || ""}
+              {item.data.summary ||
+                item.data.description ||
+                ""}
             </small>
           </Link>
         ))}
@@ -64,45 +104,74 @@ function RelatedPosts({ post }: { post: ContentItem }) {
   );
 }
 
-export default function BlogArticle({ post }: { post: ContentItem }) {
+export default function BlogArticle({
+  post,
+}: {
+  post: ContentItem;
+}) {
   const posts = getCollection("blogs");
 
-  const index = posts.findIndex((item) => item.route === post.route);
+  const index = posts.findIndex(
+    (item) => item.route === post.route
+  );
 
-  const newer = index > 0 ? posts[index - 1] : undefined;
-  const older = index >= 0 ? posts[index + 1] : undefined;
+  const newer =
+    index > 0
+      ? posts[index - 1]
+      : undefined;
 
-  const headings = extractHeadings(post.content);
+  const older =
+    index >= 0
+      ? posts[index + 1]
+      : undefined;
+
+  const headings = extractHeadings(
+    post.content
+  );
 
   return (
     <article>
       <header className="article-header">
-        <div className="eyebrow">~/blogs/{post.slug}</div>
+        <div className="eyebrow">
+          ~/blogs/{post.slug}
+        </div>
 
         <h1>{post.data.title}</h1>
 
-        {post.data.summary && <p>{post.data.summary}</p>}
+        {post.data.summary && (
+          <p>{post.data.summary}</p>
+        )}
 
         <div className="article-author">
           By <strong>Sagar Panda</strong>
         </div>
 
         <div className="article-meta">
-          <span>{displayDate(post.data.date)}</span>
+          <span>
+            {displayDate(post.data.date)}
+          </span>
+
           <span>·</span>
-          <span>{readingTime(post.content)} min read</span>
+
+          <span>
+            {readingTime(post.content)} min read
+          </span>
         </div>
 
         <div className="article-tags">
-          {(post.data.tags || []).map((tag, i) => (
-            <Link
-              key={`${tag}-${i}`}
-              href={`/tags/${encodeURIComponent(tag)}/`}
-              className="tag-link"
-            >
-              #{tag}
-            </Link>
-          ))}
+          {(post.data.tags || []).map(
+            (tag, i) => (
+              <Link
+                key={`${tag}-${i}`}
+                href={`/tags/${encodeURIComponent(
+                  tag
+                )}/`}
+                className="tag-link"
+              >
+                #{tag}
+              </Link>
+            )
+          )}
         </div>
       </header>
 
@@ -118,18 +187,28 @@ export default function BlogArticle({ post }: { post: ContentItem }) {
       )}
 
       <div className="article-content">
-        <TableOfContents headings={headings} />
+        <TableOfContents
+          headings={headings}
+        />
 
         <div className="article-body">
-          <MarkdownContent source={post.content} />
+          <MarkdownContent
+            source={post.content}
+          />
         </div>
       </div>
 
       <div className="article-nav">
         {older ? (
-          <Link href={older.route} className="article-nav-card">
+          <Link
+            href={older.route}
+            className="article-nav-card"
+          >
             <span>← previous</span>
-            <strong>{older.data.title}</strong>
+
+            <strong>
+              {older.data.title}
+            </strong>
           </Link>
         ) : (
           <span />
@@ -141,7 +220,10 @@ export default function BlogArticle({ post }: { post: ContentItem }) {
             className="article-nav-card article-nav-next"
           >
             <span>next →</span>
-            <strong>{newer.data.title}</strong>
+
+            <strong>
+              {newer.data.title}
+            </strong>
           </Link>
         ) : (
           <span />
@@ -151,7 +233,9 @@ export default function BlogArticle({ post }: { post: ContentItem }) {
       <RelatedPosts post={post} />
 
       <footer className="article-footer">
-        <Link href="/blogs/">← all posts</Link>
+        <Link href="/blogs/">
+          ← all posts
+        </Link>
       </footer>
     </article>
   );
