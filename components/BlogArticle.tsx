@@ -8,9 +8,8 @@ import {
 import type { ContentItem } from "@/types/content";
 
 import MarkdownContent from "@/components/MarkdownContent";
-import TableOfContents, {
-  extractHeadings,
-} from "@/components/TableOfContents";
+import TableOfContents from "@/components/TableOfContents";
+import { extractHeadings } from "@/lib/headings";
 
 function RelatedPosts({
   post,
