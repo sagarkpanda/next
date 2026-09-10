@@ -24,7 +24,11 @@ function getTextContent(value: React.ReactNode): string {
   }
 
   if (React.isValidElement(value)) {
-    return getTextContent(value.props.children);
+    const props = value.props as {
+      children?: React.ReactNode;
+    };
+
+    return getTextContent(props.children);
   }
 
   return "";
@@ -120,10 +124,7 @@ export default function MarkdownRenderer({
             }
           }
 
-          const isMermaid =
-            language === "mermaid";
-
-          if (isMermaid) {
+          if (language === "mermaid") {
             return <>{children}</>;
           }
 
