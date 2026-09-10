@@ -22,14 +22,16 @@ function getText(value: React.ReactNode): string {
     return value.map(getText).join("");
   }
 
-  if (value && typeof value === "object") {
-    if ("props" in value) {
-      const props = value.props as {
-        children?: React.ReactNode;
-      };
+  if (
+    value &&
+    typeof value === "object" &&
+    "props" in value
+  ) {
+    const props = value.props as {
+      children?: React.ReactNode;
+    };
 
-      return getText(props.children);
-    }
+    return getText(props.children);
   }
 
   return "";
@@ -74,9 +76,7 @@ export default function MarkdownContent({
               childProps.className ?? "";
 
             const match =
-              /language-([\w-]+)/.exec(
-                className
-              );
+              /language-([\w-]+)/.exec(className);
 
             if (match?.[1]) {
               language = match[1];
