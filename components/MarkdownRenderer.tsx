@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -46,20 +47,15 @@ function CodeBlock({
   const [expanded, setExpanded] = useState(false);
 
   const code = getTextContent(children);
-  const lines = code.replace(/\n$/, "").split("\n");
-  const isLong = lines.length > 3;
-
-  const visibleCode =
-    isLong && !expanded
-      ? `${lines.slice(0, 3).join("\n")}\n`
-      : code;
+  const lineCount = code.replace(/\n$/, "").split("\n").length;
+  const isLong = lineCount > 3;
 
   return (
     <div
       className={[
-        "code-wrapper",
-        isLong && !expanded ? "code-collapsed" : "",
-        expanded ? "code-expanded" : "",
+        "code-block-wrap",
+        isLong && !expanded ? "code-block-collapsed" : "",
+        expanded ? "code-block-expanded" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -68,7 +64,9 @@ function CodeBlock({
         className="code-block"
         {...(props as React.HTMLAttributes<HTMLPreElement>)}
       >
-        <code>{visibleCode}</code>
+        <code className={`language-${language}`}>
+          {children}
+        </code>
 
         <CodeCopy code={code} />
       </pre>
