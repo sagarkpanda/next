@@ -50,7 +50,7 @@ html.dark{--muted:#d1ddd5;--text:#f0f7f1}.dark .article-body p,.dark .article-bo
   .menu-toggle{order:4}
 }
 
-/* v14: desktop navigation keeps Home in the mobile menu only; active desktop item gets a terminal prompt marker. */
+/* Portfolio revision 4: desktop navigation keeps Home in the mobile menu only; active desktop item gets a terminal prompt marker. */
 @media(min-width:801px){
   .mobile-nav a[href="/"]{display:none}
   .nav nav a.nav-active{color:var(--text)}

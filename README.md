@@ -1,4 +1,4 @@
-# Sagar Panda — Next.js site
+# Sagar Panda — Next.js site (Portfolio Revision 4)
 
 Next.js App Router + TypeScript + Tailwind CSS personal site migrated from the Hugo source.
 
@@ -33,3 +33,11 @@ The project uses Next.js static export for GitHub Pages.
 - Related posts
 - Table of contents
 - Author byline
+
+## Portfolio revision
+
+This is the fourth revision of the Sagar Panda portfolio, migrated to Next.js with Markdown-based blog content and static export for GitHub Pages.
+
+## Search
+
+The site search index is generated automatically before each production build. It searches blog/project content, tags, categories, and homepage sections.

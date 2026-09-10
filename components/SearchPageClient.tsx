@@ -2,43 +2,55 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type SearchItem = {
   title: string;
-  summary: string;
+  description: string;
+  content: string;
   tags: string[];
+  categories: string[];
   route: string;
-  kind: "blog" | "project";
+  kind: string;
 };
 
-export default function SearchPageClient({
-  items,
-}: {
-  items: SearchItem[];
-}) {
+export default function SearchPageClient() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") ?? "";
+  const [items, setItems] = useState<SearchItem[]>([]);
+
+  useEffect(() => {
+    fetch("/search-index.json")
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setItems([]));
+  }, []);
+
   const query = q.trim().toLowerCase();
 
-  const matches = items.filter((item) => {
-    if (!query) return false;
+  const matches = useMemo(() => {
+    if (!query) return [];
 
-    const haystack = [
-      item.title,
-      item.summary,
-      ...item.tags,
-    ]
-      .join(" ")
-      .toLowerCase();
+    return items.filter((item) => {
+      const haystack = [
+        item.title,
+        item.description,
+        item.content,
+        ...item.tags,
+        ...item.categories,
+      ]
+        .join(" ")
+        .toLowerCase();
 
-    return haystack.includes(query);
-  });
+      return haystack.includes(query);
+    });
+  }, [items, query]);
 
   return (
     <main className="shell page-shell">
       <section className="page-header">
         <div className="eyebrow">
-          $ search {query ? `"${query}"` : ""}
+          $ search {query ? `"${q}"` : ""}
         </div>
 
         <h1>Search</h1>
@@ -47,7 +59,7 @@ export default function SearchPageClient({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search posts and projects..."
+            placeholder="Search posts, projects, technologies..."
             autoFocus
           />
 
@@ -60,8 +72,7 @@ export default function SearchPageClient({
       {query ? (
         <section className="search-results">
           <p className="section-lead">
-            {matches.length} result
-            {matches.length === 1 ? "" : "s"} for{" "}
+            {matches.length} result{matches.length === 1 ? "" : "s"} for{" "}
             <strong>{q}</strong>.
           </p>
 
@@ -71,21 +82,17 @@ export default function SearchPageClient({
               key={`${item.kind}-${item.route}`}
               href={item.route}
             >
-              <span className="search-result-kind">
-                {item.kind}
-              </span>
+              <span className="search-result-kind">{item.kind}</span>
 
               <div>
                 <h2>{item.title}</h2>
-                <p>{item.summary}</p>
+                <p>{item.description}</p>
               </div>
             </Link>
           ))}
 
           {!matches.length && (
-            <p className="empty-state">
-              No matching posts or projects.
-            </p>
+            <p className="empty-state">No matching posts or projects.</p>
           )}
         </section>
       ) : (

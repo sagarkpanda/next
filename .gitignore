@@ -1,7 +1,30 @@
+# Dependencies
 node_modules/
+
+# Next.js build output and caches
 .next/
 out/
+
+# Local tooling / caches
+.turbo/
+.vercel/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Logs
 *.log
-.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment files
 .env*
 !.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local archives
+*.zip

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "export": "next build",
-    "check": "npm run lint && npm run build"
+    "check": "npm run lint && npm run build",
+    "prebuild": "node generate-search-index.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
