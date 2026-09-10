@@ -36,11 +36,17 @@ export default function MarkdownContent({
           }
 
           let language = "code";
+          let code = "";
 
           if (React.isValidElement(child)) {
+            const childProps = child.props as {
+              className?: string;
+              children?: React.ReactNode;
+            };
+
             const className =
-              typeof child.props?.className === "string"
-                ? child.props.className
+              typeof childProps.className === "string"
+                ? childProps.className
                 : "";
 
             const match = /language-([\w-]+)/.exec(className);
@@ -48,6 +54,8 @@ export default function MarkdownContent({
             if (match?.[1]) {
               language = match[1];
             }
+
+            code = String(childProps.children ?? "").replace(/\n$/, "");
           }
 
           return (
@@ -68,7 +76,8 @@ export default function MarkdownContent({
 
               <pre className="code-block" {...props}>
                 {children}
-                <CodeCopy />
+
+                <CodeCopy code={code} />
               </pre>
             </details>
           );
@@ -80,7 +89,7 @@ export default function MarkdownContent({
           if (match?.[1] === "mermaid") {
             return (
               <Mermaid
-                chart={String(children).replace(/\n$/, "")}
+                code={String(children).replace(/\n$/, "")}
               />
             );
           }
