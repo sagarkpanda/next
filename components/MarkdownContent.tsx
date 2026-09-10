@@ -9,6 +9,32 @@ import CodeBlock from "@/components/CodeBlock";
 import Mermaid from "@/components/Mermaid";
 import { prepareMarkdown } from "@/lib/markdown";
 
+function getText(value: React.ReactNode): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(getText).join("");
+  }
+
+  if (value && typeof value === "object") {
+    if ("props" in value) {
+      const props = value.props as {
+        children?: React.ReactNode;
+      };
+
+      return getText(props.children);
+    }
+  }
+
+  return "";
+}
+
 export default function MarkdownContent({
   source,
 }: {
@@ -27,19 +53,22 @@ export default function MarkdownContent({
       components={{
         pre({ children }) {
           const child =
-            React.Children.toArray(
-              children
-            )[0];
+            React.Children.toArray(children)[0];
+
+          const isMermaid =
+            React.isValidElement(child) &&
+            child.type === Mermaid;
+
+          if (isMermaid) {
+            return <>{children}</>;
+          }
 
           let language = "code";
 
-          if (
-            React.isValidElement(child)
-          ) {
-            const childProps =
-              child.props as {
-                className?: string;
-              };
+          if (React.isValidElement(child)) {
+            const childProps = child.props as {
+              className?: string;
+            };
 
             const className =
               childProps.className ?? "";
@@ -54,16 +83,8 @@ export default function MarkdownContent({
             }
           }
 
-          if (
-            language === "mermaid"
-          ) {
-            return <>{children}</>;
-          }
-
           return (
-            <CodeBlock
-              language={language}
-            >
+            <CodeBlock language={language}>
               {children}
             </CodeBlock>
           );
@@ -79,14 +100,13 @@ export default function MarkdownContent({
               className || ""
             );
 
-          if (
-            match?.[1] === "mermaid"
-          ) {
+          if (match?.[1] === "mermaid") {
             return (
               <Mermaid
-                code={String(
-                  children
-                ).replace(/\n$/, "")}
+                code={getText(children).replace(
+                  /\n$/,
+                  ""
+                )}
               />
             );
           }
