@@ -16,14 +16,16 @@ function getText(value: React.ReactNode): string {
     return value.map(getText).join("");
   }
 
-  if (value && typeof value === "object") {
-    if ("props" in value) {
-      const props = value.props as {
-        children?: React.ReactNode;
-      };
+  if (
+    value &&
+    typeof value === "object" &&
+    "props" in value
+  ) {
+    const props = value.props as {
+      children?: React.ReactNode;
+    };
 
-      return getText(props.children);
-    }
+    return getText(props.children);
   }
 
   return "";
@@ -37,7 +39,6 @@ export default function CodeBlock({
   language: string;
 }) {
   const code = getText(children);
-
   const normalizedCode = code.replace(/\n$/, "");
 
   const lineCount = normalizedCode
@@ -68,20 +69,6 @@ export default function CodeBlock({
         </div>
 
         {isLong && (
-          <span className="code-expand-label">
-            {expanded ? "collapse" : "expand"}
-          </span>
-        )}
-      </div>
-
-      <div className="code-content">
-        <pre className="code-block">
-          {children}
-
-          <CodeCopy code={normalizedCode} />
-        </pre>
-
-        {isLong && (
           <button
             type="button"
             className="code-expand-button"
@@ -95,9 +82,19 @@ export default function CodeBlock({
               setExpanded((value) => !value)
             }
           >
-            {expanded ? "▲" : "▼"}
+            <span aria-hidden="true">
+              {expanded ? "▲" : "▼"}
+            </span>
           </button>
         )}
+      </div>
+
+      <div className="code-content">
+        <pre className="code-block">
+          {children}
+
+          <CodeCopy code={normalizedCode} />
+        </pre>
       </div>
     </div>
   );
