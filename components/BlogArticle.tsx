@@ -7,7 +7,9 @@ import TableOfContents, { extractHeadings } from "@/components/TableOfContents";
 function RelatedPosts({ post }: { post: ContentItem }) {
   const all = getCollection("blogs").filter((item) => item.route !== post.route);
   const tags = new Set((post.data.tags ?? []).map((t) => t.toLowerCase()));
-  const categories = new Set((post.data.categories ?? []).map((c) => c.toLowerCase()));
+  const categories = new Set(
+    (post.data.categories ?? []).map((c) => c.toLowerCase())
+  );
 
   const related = all
     .map((item) => {
@@ -38,6 +40,7 @@ function RelatedPosts({ post }: { post: ContentItem }) {
   return (
     <section className="related-section">
       <div className="command">$ grep -r "related" ~/blogs</div>
+
       <h2>Related</h2>
 
       <div className="related-grid">
@@ -48,7 +51,9 @@ function RelatedPosts({ post }: { post: ContentItem }) {
             className="related-card"
           >
             <span>{displayDate(item.data.date)}</span>
+
             <strong>{item.data.title}</strong>
+
             <small>
               {item.data.summary || item.data.description || ""}
             </small>
@@ -61,9 +66,12 @@ function RelatedPosts({ post }: { post: ContentItem }) {
 
 export default function BlogArticle({ post }: { post: ContentItem }) {
   const posts = getCollection("blogs");
+
   const index = posts.findIndex((item) => item.route === post.route);
+
   const newer = index > 0 ? posts[index - 1] : undefined;
   const older = index >= 0 ? posts[index + 1] : undefined;
+
   const headings = extractHeadings(post.content);
 
   return (
@@ -109,7 +117,7 @@ export default function BlogArticle({ post }: { post: ContentItem }) {
         </div>
       )}
 
-      <div className="article-layout">
+      <div className="article-content">
         <TableOfContents headings={headings} />
 
         <div className="article-body">
@@ -119,10 +127,7 @@ export default function BlogArticle({ post }: { post: ContentItem }) {
 
       <div className="article-nav">
         {older ? (
-          <Link
-            href={older.route}
-            className="article-nav-card"
-          >
+          <Link href={older.route} className="article-nav-card">
             <span>← previous</span>
             <strong>{older.data.title}</strong>
           </Link>

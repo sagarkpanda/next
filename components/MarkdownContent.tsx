@@ -1,32 +1,99 @@
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeSlug from "rehype-slug";
-import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
+import rehypeSlug from "rehype-slug";
+
+import CodeCopy from "@/components/CodeCopy";
 import Mermaid from "@/components/Mermaid";
 import { prepareMarkdown } from "@/lib/markdown";
 
-type CodeProps = React.HTMLAttributes<HTMLElement> & { className?: string; children?: React.ReactNode };
+export default function MarkdownContent({
+  source,
+}: {
+  source: string;
+}) {
+  const prepared = prepareMarkdown(source);
 
-function CodeBlock({ className, children, ...props }: CodeProps) {
-  const language = /language-(\w+)/.exec(className || "")?.[1];
-  const value = String(children ?? "").replace(/\n$/, "");
-  if (language === "mermaid") return <Mermaid code={value} />;
-  return <code className={className} {...props}>{children}</code>;
-}
-
-export default function MarkdownContent({ source }: { source: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
+      rehypePlugins={[
+        rehypeRaw,
+        rehypeHighlight,
+        rehypeSlug,
+      ]}
       components={{
-        code: CodeBlock,
-        a: ({ href, ...props }) => <a href={href} {...props} target={href?.startsWith("http") ? "_blank" : undefined} rel={href?.startsWith("http") ? "noreferrer" : undefined} />,
-        img: ({ loading, ...props }) => <img {...props} loading={loading ?? "lazy"} />,
+        pre({ children, ...props }) {
+          const child = React.Children.toArray(children)[0];
+
+          const isMermaid =
+            React.isValidElement(child) && child.type === Mermaid;
+
+          if (isMermaid) {
+            return <>{children}</>;
+          }
+
+          let language = "code";
+
+          if (React.isValidElement(child)) {
+            const className =
+              typeof child.props?.className === "string"
+                ? child.props.className
+                : "";
+
+            const match = /language-([\w-]+)/.exec(className);
+
+            if (match?.[1]) {
+              language = match[1];
+            }
+          }
+
+          return (
+            <details className="code-details">
+              <summary className="code-summary">
+                <span className="code-summary-left">
+                  <span className="code-arrow" aria-hidden="true">
+                    ▶
+                  </span>
+
+                  <span>{language}</span>
+                </span>
+
+                <span className="code-expand-label">
+                  expand
+                </span>
+              </summary>
+
+              <pre className="code-block" {...props}>
+                {children}
+                <CodeCopy />
+              </pre>
+            </details>
+          );
+        },
+
+        code({ className, children, ...props }) {
+          const match = /language-([\w-]+)/.exec(className || "");
+
+          if (match?.[1] === "mermaid") {
+            return (
+              <Mermaid
+                chart={String(children).replace(/\n$/, "")}
+              />
+            );
+          }
+
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
       }}
     >
-      {prepareMarkdown(source)}
+      {prepared}
     </ReactMarkdown>
   );
 }
