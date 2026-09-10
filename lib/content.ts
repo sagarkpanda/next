@@ -29,19 +29,20 @@ export function getCollection(section: "blogs" | "projects"): ContentItem[] {
       const raw = fs.readFileSync(sourcePath, "utf8");
       const parsed = matter(raw);
       const slug = normalizeSlug(sourcePath, section);
-      const data = { ...parsed.data } as Frontmatter;
+      const data = { ...parsed.data } as Record<string, unknown>;
       // gray-matter/js-yaml can parse ISO-like front-matter dates as Date objects.
-      // React cannot render Date objects directly, so normalize date metadata to strings.
+      // Normalize them before assigning to the typed frontmatter object.
       if (data.date instanceof Date) {
         data.date = data.date.toISOString().slice(0, 10);
       }
+      const frontmatter = data as Frontmatter;
 
       return {
         slug,
         route: `/${section}/${slug}/`,
         sourcePath,
         content: parsed.content,
-        data
+        data: frontmatter
       };
     })
     .filter((item) => !item.data.draft)
