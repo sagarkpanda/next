@@ -71,82 +71,91 @@ export default function TableOfContents({
   useEffect(() => {
     if (!headings.length) return;
 
-    let ticking = false;
+    const getElements = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".article-body h2, .article-body h3"
+        )
+      );
 
     const updateActiveHeading = () => {
+      const elements = getElements();
+
+      if (!elements.length) return;
+
       const offset = 130;
 
-      let current = headings[0]?.id ?? "";
+      let activeIndex = 0;
 
-      for (const heading of headings) {
-        const element = document.getElementById(
-          heading.id
-        );
-
-        if (!element) continue;
-
-        const top = element.getBoundingClientRect().top;
+      for (let i = 0; i < elements.length; i++) {
+        const top = elements[i].getBoundingClientRect().top;
 
         if (top <= offset) {
-          current = heading.id;
+          activeIndex = i;
         } else {
           break;
         }
       }
 
-      setActiveId(current);
-      ticking = false;
+      const activeHeading = headings[activeIndex];
+
+      if (activeHeading) {
+        setActiveId(activeHeading.id);
+      }
     };
+
+    updateActiveHeading();
+
+    let ticking = false;
 
     const handleScroll = () => {
       if (ticking) return;
 
       ticking = true;
-      window.requestAnimationFrame(
-        updateActiveHeading
-      );
+
+      window.requestAnimationFrame(() => {
+        updateActiveHeading();
+        ticking = false;
+      });
     };
 
-    updateActiveHeading();
+    const handleResize = () => {
+      updateActiveHeading();
+    };
 
-    window.addEventListener(
-      "scroll",
-      handleScroll,
-      { passive: true }
-    );
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
-    window.addEventListener(
-      "resize",
-      handleScroll
-    );
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener(
-        "scroll",
-        handleScroll
-      );
-
-      window.removeEventListener(
-        "resize",
-        handleScroll
-      );
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
     };
   }, [headings]);
 
-  if (!headings.length) {
-    return null;
-  }
+  if (!headings.length) return null;
 
   function handleHeadingClick(
     event: React.MouseEvent<HTMLAnchorElement>,
-    id: string
+    index: number,
+    heading: Heading
   ) {
     event.preventDefault();
 
-    const element =
-      document.getElementById(id);
+    const elements = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".article-body h2, .article-body h3"
+      )
+    );
+
+    const element = elements[index];
 
     if (!element) return;
+
+    setActiveId(heading.id);
+    setOpen(false);
 
     const offset = 105;
 
@@ -160,36 +169,30 @@ export default function TableOfContents({
       behavior: "smooth",
     });
 
-    setActiveId(id);
-    setOpen(false);
+    const actualId = element.id || heading.id;
 
     window.history.replaceState(
       null,
       "",
-      `#${id}`
+      `#${actualId}`
     );
   }
 
   return (
     <section
       className={`toc${open ? " toc-open" : ""}`}
+      onMouseLeave={() => setOpen(false)}
     >
       <button
         type="button"
         className="toc-toggle"
         aria-expanded={open}
-        onClick={() =>
-          setOpen((value) => !value)
-        }
+        onClick={() => setOpen((value) => !value)}
       >
         <span className="toc-toggle-left">
-          <span className="toc-terminal">
-            $
-          </span>
+          <span className="toc-terminal">$</span>
 
-          <span>
-            table of contents
-          </span>
+          <span>table of contents</span>
         </span>
 
         <span
@@ -206,9 +209,9 @@ export default function TableOfContents({
           aria-label="Table of contents"
         >
           <div className="toc-list">
-            {headings.map((heading) => (
+            {headings.map((heading, index) => (
               <a
-                key={heading.id}
+                key={`${heading.id}-${index}`}
                 href={`#${heading.id}`}
                 className={[
                   heading.level === 3
@@ -223,7 +226,8 @@ export default function TableOfContents({
                 onClick={(event) =>
                   handleHeadingClick(
                     event,
-                    heading.id
+                    index,
+                    heading
                   )
                 }
               >
@@ -236,9 +240,7 @@ export default function TableOfContents({
                     : ""}
                 </span>
 
-                <span>
-                  {heading.text}
-                </span>
+                <span>{heading.text}</span>
               </a>
             ))}
           </div>
