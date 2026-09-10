@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import CodeCopy from "@/components/CodeCopy";
 
-function getText(
-  value: React.ReactNode
-): string {
+function getText(value: React.ReactNode): string {
   if (typeof value === "string") {
     return value;
   }
@@ -18,6 +16,16 @@ function getText(
     return value.map(getText).join("");
   }
 
+  if (value && typeof value === "object") {
+    if ("props" in value) {
+      const props = value.props as {
+        children?: React.ReactNode;
+      };
+
+      return getText(props.children);
+    }
+  }
+
   return "";
 }
 
@@ -28,35 +36,50 @@ export default function CodeBlock({
   children: React.ReactNode;
   language: string;
 }) {
-  const [expanded, setExpanded] =
-    useState(false);
-
   const code = getText(children);
 
-  const lineCount =
-    code.replace(/\n$/, "").split("\n").length;
+  const normalizedCode = code.replace(/\n$/, "");
+
+  const lineCount = normalizedCode
+    ? normalizedCode.split("\n").length
+    : 0;
 
   const isLong = lineCount > 3;
+
+  const [expanded, setExpanded] = React.useState(false);
+
+  const collapsed = isLong && !expanded;
 
   return (
     <div
       className={[
         "code-details",
-        isLong && !expanded
-          ? "code-collapsed"
-          : "",
+        collapsed ? "code-collapsed" : "",
+        expanded ? "code-expanded" : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
       <div className="code-summary">
         <div className="code-summary-left">
-          <span
-            className="code-language"
-          >
+          <span className="code-language">
             {language}
           </span>
         </div>
+
+        {isLong && (
+          <span className="code-expand-label">
+            {expanded ? "collapse" : "expand"}
+          </span>
+        )}
+      </div>
+
+      <div className="code-content">
+        <pre className="code-block">
+          {children}
+
+          <CodeCopy code={normalizedCode} />
+        </pre>
 
         {isLong && (
           <button
@@ -69,20 +92,13 @@ export default function CodeBlock({
             }
             aria-expanded={expanded}
             onClick={() =>
-              setExpanded(
-                (value) => !value
-              )
+              setExpanded((value) => !value)
             }
           >
             {expanded ? "▲" : "▼"}
           </button>
         )}
       </div>
-
-      <pre className="code-block">
-        {children}
-        <CodeCopy code={code} />
-      </pre>
     </div>
   );
 }
