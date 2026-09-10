@@ -1872,3 +1872,207 @@ html.dark{
     padding:5px 10px
   }
 }
+
+/* =========================================================
+   v4 - Stable Markdown code blocks
+   ========================================================= */
+
+.code-block-wrap{
+  position:relative;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:28px 0;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--code);
+}
+
+.code-block-wrap .code-block{
+  position:relative;
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  padding:18px;
+  border:0;
+  border-radius:0;
+  background:var(--code);
+  color:#e5e7eb;
+  font-size:12px;
+  line-height:1.65;
+  white-space:pre;
+  overflow-x:auto;
+  overflow-y:hidden;
+  box-sizing:border-box;
+}
+
+.code-block-wrap .code-block > code{
+  display:block;
+  width:max-content;
+  min-width:100%;
+  white-space:pre;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+
+/* Keep the page itself from becoming horizontally scrollable. */
+.article-body{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:hidden;
+}
+
+.article-content{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:hidden;
+}
+
+/* Only the code area scrolls horizontally. */
+.code-block-wrap{
+  overflow:hidden;
+}
+
+.code-block-wrap .code-block{
+  overflow-x:auto;
+}
+
+/* ---------------------------------------------------------
+   Three-line collapsed state
+   --------------------------------------------------------- */
+
+.code-block-collapsed .code-block{
+  max-height:calc(
+    18px +
+    (1.65em * 3) +
+    18px
+  );
+  overflow-y:hidden;
+}
+
+/* Expanded code */
+.code-block-expanded .code-block{
+  max-height:none;
+}
+
+/* ---------------------------------------------------------
+   Centered expand/collapse button
+   --------------------------------------------------------- */
+
+.code-expand-button{
+  position:absolute;
+  left:50%;
+  bottom:8px;
+  transform:translateX(-50%);
+  z-index:5;
+
+  width:34px;
+  height:26px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:0;
+
+  border:1px solid var(--accent);
+  border-radius:6px;
+
+  background:var(--panel);
+  color:var(--accent);
+
+  font-family:inherit;
+  font-size:11px;
+  font-weight:700;
+
+  cursor:pointer;
+
+  box-shadow:0 4px 12px color-mix(
+    in srgb,
+    #000 25%,
+    transparent
+  );
+
+  transition:
+    background .2s ease,
+    color .2s ease,
+    border-color .2s ease;
+}
+
+.code-expand-button:hover{
+  background:var(--accent);
+  color:var(--bg);
+  border-color:var(--accent);
+}
+
+.code-expand-button span{
+  display:block;
+  line-height:1;
+}
+
+/* Give the collapsed code a little breathing room around
+   the centered button. */
+.code-block-collapsed .code-block{
+  padding-bottom:32px;
+}
+
+/* ---------------------------------------------------------
+   Code copy button
+   --------------------------------------------------------- */
+
+.code-block-wrap .copy-button{
+  display:none;
+}
+
+/* ---------------------------------------------------------
+   Mobile protection
+   --------------------------------------------------------- */
+
+@media(max-width:800px){
+  .article-body{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    overflow-x:hidden;
+  }
+
+  .article-content{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    overflow-x:hidden;
+  }
+
+  .code-block-wrap{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:24px 0;
+  }
+
+  .code-block-wrap .code-block{
+    width:100%;
+    max-width:100%;
+    padding:14px;
+    font-size:11px;
+  }
+
+  .code-block-wrap .code-block > code{
+    width:max-content;
+    min-width:100%;
+  }
+
+  .code-expand-button{
+    bottom:6px;
+    width:32px;
+    height:24px;
+  }
+}
+.toc.toc-open .toc-arrow{
+  transform:none;
+}
