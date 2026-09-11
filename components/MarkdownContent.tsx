@@ -130,20 +130,20 @@ export default function MarkdownContent({
          * and alt text.
          */
         img({
-          src,
-          alt,
-        }) {
-          if (!src) {
-            return null;
-          }
+        src,
+        alt,
+      }) {
+        if (typeof src !== "string" || !src) {
+          return null;
+        }
 
-          return (
-            <ImageLightbox
-              src={src}
-              alt={alt || ""}
-            />
-          );
-        },
+        return (
+          <ImageLightbox
+            src={src}
+            alt={alt || ""}
+          />
+        );
+      },
       }}
     >
       {prepared}
