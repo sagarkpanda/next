@@ -728,5 +728,11 @@ html.dark .hljs-deletion{color:#ffa198;background:rgba(248,81,73,.16);}
   color:#ff7b72;
 }
 
+/* Code block language label */
+.code-header,
+.code-header span{
+  color:var(--accent);
+}
+
 html.dark .article-body p,html.dark .article-body li{color:#d7e3db;}
 html.dark .post-row p,html.dark .section-lead,html.dark .hero-copy,html.dark .about-grid p,html.dark .timeline ul,html.dark .article-header p{color:#d1ddd5;}
