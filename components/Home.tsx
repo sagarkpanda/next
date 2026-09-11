@@ -24,7 +24,8 @@ export default function Home() {
   return (
     <main className="shell home">
       <section className="hero">
-        <div className="terminal-line"><span className="prompt">sagar@cloud</span>:~$ whoami</div>
+        {/* <div className="terminal-line"><span className="prompt">sagar@cloud</span>:~$ whoami</div> */}
+        <div className="terminal-line">$ whoami</div>
         <div className="hero-grid">
           <div><div className="avatar-wrap"><img src={site.avatar} alt={site.name} /></div></div>
           <div>
