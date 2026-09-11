@@ -417,7 +417,6 @@ At this point the application repository has completed its security checks and p
 
 {{< figure src="https://i.ibb.co/8Dz9w6hX/wf-in-src-repo.png" alt="workflow in app repo" width="1000" height="600" title="workflows in app repo" >}}
 
----
 
 ## Part II: Platform Security {#part-ii}
 

@@ -30,51 +30,40 @@ export function extractHeadings(markdown: string): Heading[] {
   const headings: Heading[] = [];
   const slugCounts = new Map<string, number>();
 
-  let insideFence = false;
-  let fenceChar = "";
-
   for (const line of markdown.split("\n")) {
-    const trimmed = line.trim();
-
-    if (
-      trimmed.startsWith("```") ||
-      trimmed.startsWith("~~~")
-    ) {
-      const currentFence = trimmed.startsWith("```")
-        ? "```"
-        : "~~~";
-
-      if (!insideFence) {
-        insideFence = true;
-        fenceChar = currentFence;
-      } else if (currentFence === fenceChar) {
-        insideFence = false;
-        fenceChar = "";
-      }
-
-      continue;
-    }
-
-    if (insideFence) continue;
-
     const match = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
 
     if (!match) continue;
 
     const level = match[1].length;
-    const text = cleanHeadingText(match[2]);
+    const rawText = match[2];
+
+    const customIdMatch =
+      /\s*\{#([^}]+)\}\s*$/.exec(rawText);
+
+    const text = cleanHeadingText(
+      customIdMatch
+        ? rawText.replace(/\s*\{#[^}]+\}\s*$/, "")
+        : rawText
+    );
 
     if (!text) continue;
 
-    const baseId = slugify(text) || "section";
+    const baseId =
+      customIdMatch?.[1] ||
+      slugify(text) ||
+      "section";
+
     const count = slugCounts.get(baseId) ?? 0;
 
     slugCounts.set(baseId, count + 1);
 
     const id =
-      count === 0
+      customIdMatch
         ? baseId
-        : `${baseId}-${count}`;
+        : count === 0
+          ? baseId
+          : `${baseId}-${count}`;
 
     headings.push({
       id,

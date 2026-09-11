@@ -38,6 +38,31 @@ function getText(value: React.ReactNode): string {
   return "";
 }
 
+function removeCustomHeadingId(
+  value: React.ReactNode
+): React.ReactNode {
+  if (typeof value === "string") {
+    return value.replace(/\s*\{#[^}]+\}\s*$/, "");
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(removeCustomHeadingId);
+  }
+
+  if (
+    React.isValidElement(value) &&
+    value.props?.children
+  ) {
+    return React.cloneElement(
+      value,
+      undefined,
+      removeCustomHeadingId(value.props.children)
+    );
+  }
+
+  return value;
+}
+
 export default function MarkdownContent({
   source,
 }: {
@@ -54,6 +79,33 @@ export default function MarkdownContent({
         rehypeSlug,
       ]}
       components={{
+        h2({ children, ...props }) {
+            const text = getText(children);
+            const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
+
+            return (
+              <h2
+                {...props}
+                id={match?.[1] || props.id}
+              >
+                {removeCustomHeadingId(children)}
+              </h2>
+            );
+          },
+
+          h3({ children, ...props }) {
+            const text = getText(children);
+            const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
+
+            return (
+              <h3
+                {...props}
+                id={match?.[1] || props.id}
+              >
+                {removeCustomHeadingId(children)}
+              </h3>
+            );
+          },
         pre({ children }) {
           const child =
             React.Children.toArray(children)[0];
