@@ -729,9 +729,10 @@ html.dark .hljs-deletion{color:#ffa198;background:rgba(248,81,73,.16);}
 }
 
 /* Code block language label */
-.code-header,
-.code-header span{
+.code-language{
   color:var(--accent);
+  opacity:1;
+  font-weight:500;
 }
 
 html.dark .article-body p,html.dark .article-body li{color:#d7e3db;}
