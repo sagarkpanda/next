@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export type Heading = {
   id: string;
@@ -36,7 +36,6 @@ export function extractHeadings(markdown: string): Heading[] {
   for (const line of markdown.split("\n")) {
     const trimmed = line.trim();
 
-    // Ignore headings inside fenced code blocks.
     if (
       trimmed.startsWith("```") ||
       trimmed.startsWith("~~~")
@@ -68,7 +67,6 @@ export function extractHeadings(markdown: string): Heading[] {
     if (!text) continue;
 
     const baseId = slugify(text) || "section";
-
     const count = slugCounts.get(baseId) ?? 0;
 
     slugCounts.set(baseId, count + 1);
@@ -102,6 +100,8 @@ export default function TableOfContents({
   const [activeText, setActiveText] = useState(
     "table of contents"
   );
+
+  const tocRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!headings.length) return;
@@ -157,7 +157,6 @@ export default function TableOfContents({
       }
     };
 
-    // Set initial heading.
     updateActiveHeading();
 
     let ticking = false;
@@ -196,6 +195,38 @@ export default function TableOfContents({
     };
   }, [headings]);
 
+  /*
+   * Close the TOC when clicking anywhere outside it.
+   */
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Node)) return;
+
+      if (
+        tocRef.current &&
+        !tocRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, [open]);
+
   if (!headings.length) return null;
 
   function handleHeadingClick(
@@ -222,6 +253,12 @@ export default function TableOfContents({
       offset;
 
     /*
+     * Immediately close the TOC for EVERY item,
+     * including the final items in the list.
+     */
+    setOpen(false);
+
+    /*
      * Immediately make the clicked section the
      * current TOC heading.
      */
@@ -233,13 +270,8 @@ export default function TableOfContents({
         "table of contents"
     );
 
-    /*
-     * Close the expanded TOC after selecting a heading.
-     */
-    setOpen(false);
-
     window.scrollTo({
-      top,
+      top: Math.max(0, top),
       behavior: "smooth",
     });
 
@@ -257,8 +289,8 @@ export default function TableOfContents({
 
   return (
     <section
+      ref={tocRef}
       className={`toc${open ? " toc-open" : ""}`}
-      onMouseLeave={() => setOpen(false)}
     >
       <button
         type="button"
