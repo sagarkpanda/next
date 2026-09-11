@@ -2110,6 +2110,32 @@ html.dark .hljs-deletion{
   font-size:inherit;
 }
 
+.search-popup-result{
+  min-width:0;
+  display:block;
+}
+
+.search-popup-result strong{
+  display:block;
+  color:inherit;
+  font-weight:400;
+}
+
+.search-popup-result small{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.5;
+}
+
+.search-popup-result small mark{
+  font-size:inherit;
+}
+
 
 /* =========================================================
    MAIN SEARCH PAGE

@@ -98,10 +98,14 @@ export default function SearchButton() {
     ? index
         .filter((item) => item.kind === "Blog")
         .filter((item) => {
+          const cleanContent = cleanSearchContent(
+            item.content
+          );
+
           const haystack = [
             item.title,
             item.description,
-            cleanSearchContent(item.content),
+            cleanContent,
             ...item.tags,
             ...item.categories,
           ]
@@ -161,7 +165,9 @@ export default function SearchButton() {
                 <input
                   autoFocus
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) =>
+                    setQuery(event.target.value)
+                  }
                   placeholder="Search blog posts..."
                   aria-label="Search blog posts"
                 />
@@ -207,20 +213,43 @@ export default function SearchButton() {
                   </div>
 
                   <div className="search-results-scroll">
-                    {results.map((item) => (
-                      <Link
-                        key={`${item.kind}-${item.route}`}
-                        href={item.route}
-                        onClick={closeSearch}
-                      >
-                        <span>
-                          {item.title}
-                          <small>Blog</small>
-                        </span>
+                    {results.map((item) => {
+                      const cleanContent =
+                        cleanSearchContent(
+                          item.content
+                        );
 
-                        <span>↗</span>
-                      </Link>
-                    ))}
+                      const preview =
+                        findContentMatch(
+                          cleanContent,
+                          normalized
+                        ) || item.description;
+
+                      return (
+                        <Link
+                          key={`${item.kind}-${item.route}`}
+                          href={item.route}
+                          onClick={closeSearch}
+                        >
+                          <span className="search-popup-result">
+                            <strong>
+                              {item.title}
+                            </strong>
+
+                            {preview && (
+                              <small>
+                                {highlightMatch(
+                                  preview,
+                                  normalized
+                                )}
+                              </small>
+                            )}
+                          </span>
+
+                          <span>↗</span>
+                        </Link>
+                      );
+                    })}
 
                     {!results.length &&
                       filteredSections.length > 0 && (
@@ -229,16 +258,18 @@ export default function SearchButton() {
                             matching sections
                           </div>
 
-                          {filteredSections.map(([name, href]) => (
-                            <Link
-                              key={href}
-                              href={href}
-                              onClick={closeSearch}
-                            >
-                              {name}
-                              <span>↗</span>
-                            </Link>
-                          ))}
+                          {filteredSections.map(
+                            ([name, href]) => (
+                              <Link
+                                key={href}
+                                href={href}
+                                onClick={closeSearch}
+                              >
+                                {name}
+                                <span>↗</span>
+                              </Link>
+                            )
+                          )}
                         </>
                       )}
                   </div>
@@ -271,13 +302,19 @@ function cleanSearchContent(content: string) {
     .replace(/```[\s\S]*?```/g, " ")
 
     // Remove Hugo figure shortcodes.
-    .replace(/\{\{<\s*figure[\s\S]*?>\}\}/gi, " ")
+    .replace(
+      /\{\{<\s*figure[\s\S]*?>\}\}/gi,
+      " "
+    )
 
     // Remove Markdown images.
     .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
 
     // Remove reference-style Markdown images.
-    .replace(/!\[[^\]]*\]\s*\[[^\]]*\]/g, " ")
+    .replace(
+      /!\[[^\]]*\]\s*\[[^\]]*\]/g,
+      " "
+    )
 
     // Remove raw HTML images.
     .replace(/<img\b[^>]*>/gi, " ")
@@ -286,7 +323,10 @@ function cleanSearchContent(content: string) {
     .replace(/<\/?figure\b[^>]*>/gi, " ")
 
     // Keep visible Markdown link text.
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(
+      /\[([^\]]+)\]\([^)]+\)/g,
+      "$1"
+    )
 
     // Remove remaining HTML.
     .replace(/<[^>]+>/g, " ")
@@ -294,10 +334,106 @@ function cleanSearchContent(content: string) {
     // Remove common Markdown formatting.
     .replace(/[#>*_`~]/g, " ")
 
-    // Remove Markdown link/reference remnants.
+    // Remove Markdown link remnants.
     .replace(/\]\s*\(/g, " ")
 
     // Normalize whitespace.
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function findContentMatch(
+  content: string,
+  query: string
+) {
+  if (!content || !query) return "";
+
+  const lowerContent = content.toLowerCase();
+
+  const matchIndex =
+    lowerContent.indexOf(query);
+
+  if (matchIndex === -1) return "";
+
+  const sentences = content.split(
+    /(?<=[.!?])\s+/
+  );
+
+  let position = 0;
+
+  for (const sentence of sentences) {
+    const sentenceStart = position;
+    const sentenceEnd =
+      position + sentence.length;
+
+    if (
+      matchIndex >= sentenceStart &&
+      matchIndex <= sentenceEnd
+    ) {
+      const maxLength = 180;
+
+      if (sentence.length <= maxLength) {
+        return sentence.trim();
+      }
+
+      const localMatch =
+        matchIndex - sentenceStart;
+
+      const start = Math.max(
+        0,
+        localMatch - 70
+      );
+
+      const end = Math.min(
+        sentence.length,
+        start + maxLength
+      );
+
+      let preview = sentence
+        .slice(start, end)
+        .trim();
+
+      if (start > 0) {
+        preview = `…${preview}`;
+      }
+
+      if (end < sentence.length) {
+        preview = `${preview}…`;
+      }
+
+      return preview;
+    }
+
+    position = sentenceEnd + 1;
+  }
+
+  return content.slice(
+    Math.max(0, matchIndex - 70),
+    matchIndex + 110
+  );
+}
+
+function highlightMatch(
+  text: string,
+  query: string
+) {
+  if (!query) return text;
+
+  const escaped = query.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+  const parts = text.split(
+    new RegExp(`(${escaped})`, "gi")
+  );
+
+  return parts.map((part, index) =>
+    part.toLowerCase() ===
+    query.toLowerCase() ? (
+      <mark key={index}>{part}</mark>
+    ) : (
+      <span key={index}>{part}</span>
+    )
+  );
 }
