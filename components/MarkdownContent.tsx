@@ -7,6 +7,7 @@ import rehypeSlug from "rehype-slug";
 
 import CodeBlock from "@/components/CodeBlock";
 import Mermaid from "@/components/Mermaid";
+import ImageLightbox from "@/components/ImageLightbox";
 import { prepareMarkdown } from "@/lib/markdown";
 
 function getText(value: React.ReactNode): string {
@@ -118,6 +119,29 @@ export default function MarkdownContent({
             >
               {children}
             </code>
+          );
+        },
+
+        /*
+         * Markdown images and raw HTML <img> elements
+         * are both handled here by react-markdown.
+         *
+         * The lightbox receives the real rendered src
+         * and alt text.
+         */
+        img({
+          src,
+          alt,
+        }) {
+          if (!src) {
+            return null;
+          }
+
+          return (
+            <ImageLightbox
+              src={src}
+              alt={alt || ""}
+            />
           );
         },
       }}
