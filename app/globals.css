@@ -1998,6 +1998,27 @@ html.dark .hljs-deletion{
 
 .search-suggestions{
   margin-top:18px;
+  max-height:360px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+}
+
+.search-suggestions::-webkit-scrollbar{
+  width:6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb{
+  background:var(--line);
+  border-radius:6px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover{
+  background:var(--muted);
 }
 
 .search-suggestions-title{
@@ -2064,17 +2085,46 @@ html.dark .hljs-deletion{
 }
 
 .search-match-preview{
-  display:block;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  max-width:520px;
+  margin-top:4px;
   color:var(--muted);
   font-size:9px;
   line-height:1.5;
-  margin-top:4px;
-  max-width:520px;
-  overflow:hidden;
 }
 
 .search-match-preview mark{
   font-size:inherit;
+}
+
+.search-result-meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.search-result-meta span{
+  color:var(--accent);
+}
+
+.search-popup-date{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+}
+
+.search-result-preview{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
 }
 
 
@@ -2192,7 +2242,6 @@ html.dark .hljs-deletion{
   padding:35px 0;
   color:var(--muted);
 }
-
 
 /* =========================================================
    SCROLL TOP

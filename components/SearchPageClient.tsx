@@ -12,6 +12,7 @@ type SearchItem = {
   categories: string[];
   route: string;
   kind: string;
+  date?: string;
 };
 
 type SearchMatch = {
@@ -40,9 +41,7 @@ export default function SearchPageClient() {
     return items
       .filter((item) => item.kind === "Blog")
       .filter((item) => {
-        const searchableContent = cleanSearchContent(
-          item.content
-        );
+        const searchableContent = cleanSearchContent(item.content);
 
         const haystack = [
           item.title,
@@ -103,10 +102,7 @@ export default function SearchPageClient() {
           </p>
 
           {matches.map((item) => {
-            const match = findContentMatch(
-              item.content,
-              q
-            );
+            const match = findContentMatch(item.content, q);
 
             return (
               <Link
@@ -114,15 +110,13 @@ export default function SearchPageClient() {
                 key={`${item.kind}-${item.route}`}
                 href={item.route}
               >
-                <span className="search-result-kind">
-                  BLOG
-                </span>
+                <span className="search-result-kind">BLOG</span>
 
                 <div>
                   <h2>{item.title}</h2>
 
                   {match ? (
-                    <p>
+                    <p className="search-result-preview">
                       {match.before}
                       <mark>{match.match}</mark>
                       {match.after}
@@ -130,6 +124,15 @@ export default function SearchPageClient() {
                   ) : (
                     <p>{item.description}</p>
                   )}
+
+                  <div className="search-result-meta">
+                    {formatDate(item.date)}
+                    <span>blogs</span>
+
+                    {item.categories.slice(0, 1).map((category) => (
+                      <span key={category}>{category}</span>
+                    ))}
+                  </div>
                 </div>
               </Link>
             );
@@ -153,18 +156,15 @@ export default function SearchPageClient() {
 function cleanSearchContent(content: string) {
   return content
     // Remove fenced code blocks.
-    .replace(
-      /```[\s\S]*?```/g,
-      " "
-    )
+    .replace(/```[\s\S]*?```/g, " ")
 
-    // Remove Hugo figure shortcodes completely.
+    // Remove Hugo figure shortcodes.
     .replace(
       /\{\{<\s*figure\b[\s\S]*?>\}\}/gi,
       " "
     )
 
-    // Remove Markdown images completely.
+    // Remove Markdown images.
     .replace(
       /!\[[^\]]*\]\(\s*(?:<[^>]*>|[^)\s]+)(?:\s+["'][^"']*["'])?\s*\)/g,
       " "
@@ -188,13 +188,13 @@ function cleanSearchContent(content: string) {
       " "
     )
 
-    // Markdown links: keep visible text only.
+    // Keep visible Markdown link text.
     .replace(
       /\[([^\]]+)\]\(\s*<?[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g,
       "$1"
     )
 
-    // Reference-style Markdown links.
+    // Reference-style links.
     .replace(
       /\[([^\]]+)\]\[[^\]]*\]/g,
       "$1"
@@ -221,117 +221,79 @@ function findContentMatch(
   content: string,
   searchTerm: string
 ): SearchMatch | null {
-  const cleanedContent =
-    cleanSearchContent(content);
-
+  const cleanedContent = cleanSearchContent(content);
   const term = searchTerm.trim();
 
   if (!cleanedContent || !term) {
     return null;
   }
 
-  const lowerContent =
-    cleanedContent.toLowerCase();
+  const lowerContent = cleanedContent.toLowerCase();
+  const lowerTerm = term.toLowerCase();
 
-  const lowerTerm =
-    term.toLowerCase();
-
-  const matchIndex =
-    lowerContent.indexOf(lowerTerm);
+  const matchIndex = lowerContent.indexOf(lowerTerm);
 
   if (matchIndex === -1) {
     return null;
   }
 
-  /*
-   * Split the cleaned article into sentences.
-   * Keep the original sentence text so the result
-   * remains readable.
-   */
-  const sentences =
-    splitIntoSentences(cleanedContent);
+  const sentenceStart = findSentenceStart(
+    cleanedContent,
+    matchIndex
+  );
 
-  let currentSentenceIndex = -1;
-  let currentOffset = 0;
+  const sentenceEnd = findSentenceEnd(
+    cleanedContent,
+    matchIndex + term.length
+  );
 
-  for (let i = 0; i < sentences.length; i++) {
-    const sentence = sentences[i];
+  const sentence = cleanedContent
+    .slice(sentenceStart, sentenceEnd)
+    .trim();
 
-    const sentenceStart =
-      currentOffset;
-
-    const sentenceEnd =
-      sentenceStart + sentence.length;
-
-    if (
-      matchIndex >= sentenceStart &&
-      matchIndex < sentenceEnd
-    ) {
-      currentSentenceIndex = i;
-      break;
-    }
-
-    currentOffset = sentenceEnd;
-  }
-
-  if (currentSentenceIndex === -1) {
+  if (!sentence) {
     return null;
   }
 
-  const startSentence = Math.max(
-    0,
-    currentSentenceIndex - 2
-  );
-
-  const endSentence = Math.min(
-    sentences.length,
-    currentSentenceIndex + 3
-  );
-
-  const selected = sentences.slice(
-    startSentence,
-    endSentence
-  );
-
-  const selectedText =
-    selected.join(" ").trim();
-
-  const selectedLower =
-    selectedText.toLowerCase();
-
-  const localMatchIndex =
-    selectedLower.indexOf(lowerTerm);
+  const localMatchIndex = sentence
+    .toLowerCase()
+    .indexOf(lowerTerm);
 
   if (localMatchIndex === -1) {
     return null;
   }
 
-  let before =
-    selectedText.slice(
-      0,
-      localMatchIndex
-    );
+  let before = sentence.slice(
+    0,
+    localMatchIndex
+  );
 
-  const match =
-    selectedText.slice(
-      localMatchIndex,
-      localMatchIndex + term.length
-    );
+  const match = sentence.slice(
+    localMatchIndex,
+    localMatchIndex + term.length
+  );
 
-  let after =
-    selectedText.slice(
-      localMatchIndex + term.length
-    );
+  let after = sentence.slice(
+    localMatchIndex + term.length
+  );
 
-  before = before.trim();
-  after = after.trim();
+  const maxBefore = 70;
+  const maxAfter = 90;
 
-  if (startSentence > 0) {
-    before = `… ${before}`;
+  if (before.length > maxBefore) {
+    before = `…${before
+      .slice(-maxBefore)
+      .trim()}`;
+  } else if (sentenceStart > 0) {
+    before = `…${before.trim()}`;
   }
 
-  if (endSentence < sentences.length) {
-    after = `${after} …`;
+  if (after.length > maxAfter) {
+    after = `${after
+      .slice(0, maxAfter)
+      .trim()}…`;
+  } else if (sentenceEnd < cleanedContent.length) {
+    after = `${after.trim()} …`;
   }
 
   return {
@@ -341,25 +303,58 @@ function findContentMatch(
   };
 }
 
-function splitIntoSentences(text: string) {
-  /*
-   * Handles normal prose sentences ending in:
-   * . ! ?
-   *
-   * Also avoids breaking common technical patterns
-   * unnecessarily by requiring whitespace after the
-   * punctuation.
-   */
-  const sentences =
-    text.match(
-      /[^.!?]+(?:[.!?]+(?=\s|$)|$)/g
-    ) ?? [];
+function findSentenceStart(
+  text: string,
+  index: number
+) {
+  for (let i = index - 1; i >= 0; i--) {
+    const char = text[i];
 
-  return sentences
-    .map((sentence) =>
-      sentence.replace(/\s+/g, " ").trim()
-    )
-    .filter(Boolean);
+    if (
+      char === "." ||
+      char === "!" ||
+      char === "?"
+    ) {
+      return i + 1;
+    }
+  }
+
+  return 0;
+}
+
+function findSentenceEnd(
+  text: string,
+  index: number
+) {
+  for (let i = index; i < text.length; i++) {
+    const char = text[i];
+
+    if (
+      char === "." ||
+      char === "!" ||
+      char === "?"
+    ) {
+      return i + 1;
+    }
+  }
+
+  return text.length;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
 
 function XIcon() {

@@ -13,6 +13,7 @@ type SearchItem = {
   categories: string[];
   route: string;
   kind: string;
+  date?: string;
 };
 
 type SearchMatch = {
@@ -95,11 +96,11 @@ export default function SearchButton() {
   const normalized =
     query.trim().toLowerCase();
 
-  const filteredSections =
-    sections.filter(([name]) =>
+  const filteredSections = sections.filter(
+    ([name]) =>
       !normalized ||
       name.toLowerCase().includes(normalized)
-    );
+  );
 
   const results = useMemo(() => {
     if (!normalized) return [];
@@ -209,7 +210,7 @@ export default function SearchButton() {
                 ))}
               </div>
             ) : (
-              <div className="search-suggestions">
+              <div className="search-suggestions search-results-scroll">
                 <div className="search-suggestions-title">
                   {results.length
                     ? "matching blog posts"
@@ -217,11 +218,10 @@ export default function SearchButton() {
                 </div>
 
                 {results.map((item) => {
-                  const match =
-                    findContentMatch(
-                      item.content,
-                      query
-                    );
+                  const match = findContentMatch(
+                    item.content,
+                    query
+                  );
 
                   return (
                     <Link
@@ -235,14 +235,16 @@ export default function SearchButton() {
                         {match ? (
                           <small className="search-match-preview">
                             {match.before}
-                            <mark>
-                              {match.match}
-                            </mark>
+                            <mark>{match.match}</mark>
                             {match.after}
                           </small>
                         ) : (
                           <small>Blog</small>
                         )}
+
+                        <small className="search-popup-date">
+                          {formatDate(item.date)}
+                        </small>
                       </span>
 
                       <span>↗</span>
@@ -296,10 +298,7 @@ export default function SearchButton() {
 function cleanSearchContent(content: string) {
   return content
     // Remove fenced code blocks.
-    .replace(
-      /```[\s\S]*?```/g,
-      " "
-    )
+    .replace(/```[\s\S]*?```/g, " ")
 
     // Remove Hugo figure shortcodes.
     .replace(
@@ -331,7 +330,7 @@ function cleanSearchContent(content: string) {
       " "
     )
 
-    // Keep Markdown link text but remove its URL.
+    // Keep visible Markdown link text.
     .replace(
       /\[([^\]]+)\]\(\s*<?[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g,
       "$1"
@@ -343,7 +342,7 @@ function cleanSearchContent(content: string) {
       "$1"
     )
 
-    // Remove HTML tags.
+    // Remove raw HTML tags.
     .replace(
       /<[^>]+>/g,
       " "
@@ -386,62 +385,29 @@ function findContentMatch(
     return null;
   }
 
-  const sentences =
-    splitIntoSentences(cleanedContent);
+  const sentenceStart =
+    findSentenceStart(
+      cleanedContent,
+      matchIndex
+    );
 
-  let currentSentenceIndex = -1;
-  let currentOffset = 0;
+  const sentenceEnd =
+    findSentenceEnd(
+      cleanedContent,
+      matchIndex + term.length
+    );
 
-  for (let i = 0; i < sentences.length; i++) {
-    const sentence = sentences[i];
+  const sentence =
+    cleanedContent
+      .slice(sentenceStart, sentenceEnd)
+      .trim();
 
-    const sentenceStart =
-      currentOffset;
-
-    const sentenceEnd =
-      sentenceStart + sentence.length;
-
-    if (
-      matchIndex >= sentenceStart &&
-      matchIndex < sentenceEnd
-    ) {
-      currentSentenceIndex = i;
-      break;
-    }
-
-    currentOffset = sentenceEnd;
-  }
-
-  if (currentSentenceIndex === -1) {
+  if (!sentence) {
     return null;
   }
 
-  /*
-   * Two complete sentences before the match,
-   * the matching sentence,
-   * and two complete sentences after it.
-   */
-  const startSentence = Math.max(
-    0,
-    currentSentenceIndex - 2
-  );
-
-  const endSentence = Math.min(
-    sentences.length,
-    currentSentenceIndex + 3
-  );
-
-  const selected =
-    sentences.slice(
-      startSentence,
-      endSentence
-    );
-
-  const selectedText =
-    selected.join(" ").trim();
-
   const localMatchIndex =
-    selectedText
+    sentence
       .toLowerCase()
       .indexOf(lowerTerm);
 
@@ -450,31 +416,45 @@ function findContentMatch(
   }
 
   let before =
-    selectedText.slice(
+    sentence.slice(
       0,
       localMatchIndex
     );
 
   const match =
-    selectedText.slice(
+    sentence.slice(
       localMatchIndex,
       localMatchIndex + term.length
     );
 
   let after =
-    selectedText.slice(
+    sentence.slice(
       localMatchIndex + term.length
     );
 
-  before = before.trim();
-  after = after.trim();
+  const maxBefore = 70;
+  const maxAfter = 90;
 
-  if (startSentence > 0) {
-    before = `… ${before}`;
+  if (before.length > maxBefore) {
+    before =
+      `…${before
+        .slice(-maxBefore)
+        .trim()}`;
+  } else if (sentenceStart > 0) {
+    before =
+      `…${before.trim()}`;
   }
 
-  if (endSentence < sentences.length) {
-    after = `${after} …`;
+  if (after.length > maxAfter) {
+    after =
+      `${after
+        .slice(0, maxAfter)
+        .trim()}…`;
+  } else if (
+    sentenceEnd < cleanedContent.length
+  ) {
+    after =
+      `${after.trim()} …`;
   }
 
   return {
@@ -484,17 +464,56 @@ function findContentMatch(
   };
 }
 
-function splitIntoSentences(text: string) {
-  const sentences =
-    text.match(
-      /[^.!?]+(?:[.!?]+(?=\s|$)|$)/g
-    ) ?? [];
+function findSentenceStart(
+  text: string,
+  index: number
+) {
+  for (let i = index - 1; i >= 0; i--) {
+    const char = text[i];
 
-  return sentences
-    .map((sentence) =>
-      sentence
-        .replace(/\s+/g, " ")
-        .trim()
-    )
-    .filter(Boolean);
+    if (
+      char === "." ||
+      char === "!" ||
+      char === "?"
+    ) {
+      return i + 1;
+    }
+  }
+
+  return 0;
+}
+
+function findSentenceEnd(
+  text: string,
+  index: number
+) {
+  for (let i = index; i < text.length; i++) {
+    const char = text[i];
+
+    if (
+      char === "." ||
+      char === "!" ||
+      char === "?"
+    ) {
+      return i + 1;
+    }
+  }
+
+  return text.length;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
