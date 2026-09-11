@@ -49,14 +49,15 @@ function removeCustomHeadingId(
     return value.map(removeCustomHeadingId);
   }
 
-  if (
-    React.isValidElement(value) &&
-    value.props?.children
-  ) {
+  if (React.isValidElement(value)) {
+    const props = value.props as {
+      children?: React.ReactNode;
+    };
+
     return React.cloneElement(
       value,
       undefined,
-      removeCustomHeadingId(value.props.children)
+      removeCustomHeadingId(props.children)
     );
   }
 
@@ -80,32 +81,33 @@ export default function MarkdownContent({
       ]}
       components={{
         h2({ children, ...props }) {
-            const text = getText(children);
-            const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
+          const text = getText(children);
+          const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
 
-            return (
-              <h2
-                {...props}
-                id={match?.[1] || props.id}
-              >
-                {removeCustomHeadingId(children)}
-              </h2>
-            );
-          },
+          return (
+            <h2
+              {...props}
+              id={match?.[1] || props.id}
+            >
+              {removeCustomHeadingId(children)}
+            </h2>
+          );
+        },
 
-          h3({ children, ...props }) {
-            const text = getText(children);
-            const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
+        h3({ children, ...props }) {
+          const text = getText(children);
+          const match = /\s*\{#([^}]+)\}\s*$/.exec(text);
 
-            return (
-              <h3
-                {...props}
-                id={match?.[1] || props.id}
-              >
-                {removeCustomHeadingId(children)}
-              </h3>
-            );
-          },
+          return (
+            <h3
+              {...props}
+              id={match?.[1] || props.id}
+            >
+              {removeCustomHeadingId(children)}
+            </h3>
+          );
+        },
+
         pre({ children }) {
           const child =
             React.Children.toArray(children)[0];
@@ -182,20 +184,20 @@ export default function MarkdownContent({
          * and alt text.
          */
         img({
-        src,
-        alt,
-      }) {
-        if (typeof src !== "string" || !src) {
-          return null;
-        }
+          src,
+          alt,
+        }) {
+          if (typeof src !== "string" || !src) {
+            return null;
+          }
 
-        return (
-          <ImageLightbox
-            src={src}
-            alt={alt || ""}
-          />
-        );
-      },
+          return (
+            <ImageLightbox
+              src={src}
+              alt={alt || ""}
+            />
+          );
+        },
       }}
     >
       {prepared}
