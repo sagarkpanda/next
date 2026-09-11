@@ -8,8 +8,8 @@ import TechIcon from "@/components/TechIcon";
 import { Activity, Boxes, Cloud, GitBranch, Layers3, ShieldCheck } from "lucide-react";
 
 const skillGroups = [
-  { name: "Cloud Platforms", icon: Cloud, skills: ["AWS", "Microsoft Azure"] },
-  { name: "Containers & Orchestration", icon: Boxes, skills: ["Kubernetes", "Helm", "Argo CD", "Kustomize"] },
+  { name: "Cloud Platforms", icon: Cloud, skills: ["AWS", "Azure"] },
+  { name: "Containers & Orchestration", icon: Boxes, skills: ["Kubernetes", "Helm", "Argo CD", "Kustomize", "Docker"] },
   { name: "Monitoring & Observability", icon: Activity, skills: ["Prometheus", "Grafana", "OpenTelemetry", "New Relic"] },
   { name: "CI/CD & Automation", icon: GitBranch, skills: ["GitHub Actions", "GitLab CI/CD", "Jenkins"] },
   { name: "Infrastructure as Code & Platforms", icon: Layers3, skills: ["Terraform", "Ansible", "Linux", "Apache HTTP Server", "NGINX"] },
