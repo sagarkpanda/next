@@ -1973,7 +1973,11 @@ html.dark .hljs-deletion{
 .search-clear:hover{
   border-color:var(--accent);
   color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 8%,var(--panel));
+  background:color-mix(
+    in srgb,
+    var(--accent) 8%,
+    var(--panel)
+  );
 }
 
 .search-hint{
@@ -1990,35 +1994,8 @@ html.dark .hljs-deletion{
   color:var(--text);
 }
 
-.search-all{
-  color:var(--accent);
-  font-size:12px;
-  text-decoration:none;
-}
-
 .search-suggestions{
   margin-top:18px;
-  max-height:360px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding-right:4px;
-}
-
-.search-suggestions::-webkit-scrollbar{
-  width:6px;
-}
-
-.search-suggestions::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb{
-  background:var(--line);
-  border-radius:6px;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb:hover{
-  background:var(--muted);
 }
 
 .search-suggestions-title{
@@ -2027,6 +2004,31 @@ html.dark .hljs-deletion{
   font-size:10px;
   text-transform:uppercase;
   letter-spacing:.08em;
+}
+
+/* Only the matching result list scrolls. */
+.search-results-scroll{
+  max-height:300px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+}
+
+.search-results-scroll::-webkit-scrollbar{
+  width:6px;
+}
+
+.search-results-scroll::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.search-results-scroll::-webkit-scrollbar-thumb{
+  background:var(--line);
+  border-radius:6px;
+}
+
+.search-results-scroll::-webkit-scrollbar-thumb:hover{
+  background:var(--muted);
 }
 
 .search-suggestions a{
@@ -2042,7 +2044,11 @@ html.dark .hljs-deletion{
 }
 
 .search-suggestions a:hover{
-  background:color-mix(in srgb,var(--accent) 8%,var(--panel));
+  background:color-mix(
+    in srgb,
+    var(--accent) 8%,
+    var(--panel)
+  );
   color:var(--text);
 }
 
@@ -2078,7 +2084,11 @@ html.dark .hljs-deletion{
 
 .search-result mark,
 .search-suggestions mark{
-  background:color-mix(in srgb,var(--accent) 22%,transparent);
+  background:color-mix(
+    in srgb,
+    var(--accent) 22%,
+    transparent
+  );
   color:var(--text);
   border-radius:3px;
   padding:1px 3px;
@@ -2098,33 +2108,6 @@ html.dark .hljs-deletion{
 
 .search-match-preview mark{
   font-size:inherit;
-}
-
-.search-result-meta{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-top:8px;
-  color:var(--muted);
-  font-size:11px;
-}
-
-.search-result-meta span{
-  color:var(--accent);
-}
-
-.search-popup-date{
-  display:block;
-  margin-top:3px;
-  color:var(--muted);
-  font-size:9px;
-}
-
-.search-result-preview{
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:2;
-  overflow:hidden;
 }
 
 
@@ -2232,6 +2215,13 @@ html.dark .hljs-deletion{
   color:var(--muted);
   font-size:13px;
   line-height:1.7;
+}
+
+.search-result-preview{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
 }
 
 .search-result:hover h2{

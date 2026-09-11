@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -13,13 +13,6 @@ type SearchItem = {
   categories: string[];
   route: string;
   kind: string;
-  date?: string;
-};
-
-type SearchMatch = {
-  before: string;
-  match: string;
-  after: string;
 };
 
 const sections = [
@@ -38,49 +31,51 @@ export default function SearchButton() {
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (event: KeyboardEvent) => {
       if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === "k"
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "k"
       ) {
-        e.preventDefault();
+        event.preventDefault();
         setOpen(true);
       }
 
-      if (e.key === "Escape") {
+      if (event.key === "Escape") {
         setOpen(false);
       }
     };
 
     window.addEventListener("keydown", onKey);
 
-    return () =>
+    return () => {
       window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   useEffect(() => {
     if (!open || loaded) return;
 
     fetch("/search-index.json")
-      .then((response) =>
-        response.ok ? response.json() : []
-      )
+      .then((response) => (response.ok ? response.json() : []))
       .then((data) => {
         setIndex(Array.isArray(data) ? data : []);
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
+      .catch(() => {
+        setLoaded(true);
+      });
   }, [open, loaded]);
 
   const closeSearch = () => {
     setOpen(false);
   };
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
 
     const q = query.trim();
 
@@ -88,43 +83,35 @@ export default function SearchButton() {
 
     closeSearch();
 
-    router.push(
-      `/search/?q=${encodeURIComponent(q)}`
-    );
+    router.push(`/search/?q=${encodeURIComponent(q)}`);
   };
 
-  const normalized =
-    query.trim().toLowerCase();
+  const normalized = query.trim().toLowerCase();
 
-  const filteredSections = sections.filter(
-    ([name]) =>
-      !normalized ||
-      name.toLowerCase().includes(normalized)
+  const filteredSections = sections.filter(([name]) =>
+    !normalized
+      ? true
+      : name.toLowerCase().includes(normalized)
   );
 
-  const results = useMemo(() => {
-    if (!normalized) return [];
+  const results = normalized
+    ? index
+        .filter((item) => item.kind === "Blog")
+        .filter((item) => {
+          const haystack = [
+            item.title,
+            item.description,
+            cleanSearchContent(item.content),
+            ...item.tags,
+            ...item.categories,
+          ]
+            .join(" ")
+            .toLowerCase();
 
-    return index
-      .filter((item) => item.kind === "Blog")
-      .filter((item) => {
-        const searchableContent =
-          cleanSearchContent(item.content);
-
-        const haystack = [
-          item.title,
-          item.description,
-          searchableContent,
-          ...item.tags,
-          ...item.categories,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return haystack.includes(normalized);
-      })
-      .slice(0, 8);
-  }, [index, normalized]);
+          return haystack.includes(normalized);
+        })
+        .slice(0, 8)
+    : [];
 
   return (
     <>
@@ -133,6 +120,7 @@ export default function SearchButton() {
         onClick={() => setOpen(true)}
         aria-label="Search"
         title="Search (Ctrl+K)"
+        type="button"
       >
         <Search size={16} />
       </button>
@@ -148,12 +136,14 @@ export default function SearchButton() {
             className="search-backdrop"
             aria-label="Close search"
             onClick={closeSearch}
+            type="button"
           />
 
           <div className="search-dialog">
             <div className="search-dialog-head">
               <span>
-                <Search size={16} /> search
+                <Search size={16} />
+                search
               </span>
 
               <button
@@ -171,9 +161,7 @@ export default function SearchButton() {
                 <input
                   autoFocus
                   value={query}
-                  onChange={(e) =>
-                    setQuery(e.target.value)
-                  }
+                  onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search blog posts..."
                   aria-label="Search blog posts"
                 />
@@ -210,69 +198,51 @@ export default function SearchButton() {
                 ))}
               </div>
             ) : (
-              <div className="search-suggestions search-results-scroll">
-                <div className="search-suggestions-title">
-                  {results.length
-                    ? "matching blog posts"
-                    : "no matching blog posts"}
-                </div>
+              <>
+                <div className="search-suggestions">
+                  <div className="search-suggestions-title">
+                    {results.length
+                      ? "matching blog posts"
+                      : "no matching blog posts"}
+                  </div>
 
-                {results.map((item) => {
-                  const match = findContentMatch(
-                    item.content,
-                    query
-                  );
-
-                  return (
-                    <Link
-                      key={`${item.kind}-${item.route}`}
-                      href={item.route}
-                      onClick={closeSearch}
-                    >
-                      <span>
-                        {item.title}
-
-                        {match ? (
-                          <small className="search-match-preview">
-                            {match.before}
-                            <mark>{match.match}</mark>
-                            {match.after}
-                          </small>
-                        ) : (
+                  <div className="search-results-scroll">
+                    {results.map((item) => (
+                      <Link
+                        key={`${item.kind}-${item.route}`}
+                        href={item.route}
+                        onClick={closeSearch}
+                      >
+                        <span>
+                          {item.title}
                           <small>Blog</small>
-                        )}
+                        </span>
 
-                        <small className="search-popup-date">
-                          {formatDate(item.date)}
-                        </small>
-                      </span>
+                        <span>↗</span>
+                      </Link>
+                    ))}
 
-                      <span>↗</span>
-                    </Link>
-                  );
-                })}
+                    {!results.length &&
+                      filteredSections.length > 0 && (
+                        <>
+                          <div className="search-suggestions-title">
+                            matching sections
+                          </div>
 
-                {!results.length &&
-                  filteredSections.length > 0 && (
-                    <>
-                      <div className="search-suggestions-title">
-                        matching sections
-                      </div>
-
-                      {filteredSections.map(
-                        ([name, href]) => (
-                          <Link
-                            key={href}
-                            href={href}
-                            onClick={closeSearch}
-                          >
-                            {name}
-                            <span>↗</span>
-                          </Link>
-                        )
+                          {filteredSections.map(([name, href]) => (
+                            <Link
+                              key={href}
+                              href={href}
+                              onClick={closeSearch}
+                            >
+                              {name}
+                              <span>↗</span>
+                            </Link>
+                          ))}
+                        </>
                       )}
-                    </>
-                  )}
+                  </div>
+                </div>
 
                 <button
                   type="button"
@@ -281,7 +251,7 @@ export default function SearchButton() {
                 >
                   Search all blog posts →
                 </button>
-              </div>
+              </>
             )}
 
             <div className="search-hint">
@@ -301,219 +271,33 @@ function cleanSearchContent(content: string) {
     .replace(/```[\s\S]*?```/g, " ")
 
     // Remove Hugo figure shortcodes.
-    .replace(
-      /\{\{<\s*figure\b[\s\S]*?>\}\}/gi,
-      " "
-    )
+    .replace(/\{\{<\s*figure[\s\S]*?>\}\}/gi, " ")
 
     // Remove Markdown images.
-    .replace(
-      /!\[[^\]]*\]\(\s*(?:<[^>]*>|[^)\s]+)(?:\s+["'][^"']*["'])?\s*\)/g,
-      " "
-    )
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
 
     // Remove reference-style Markdown images.
-    .replace(
-      /!\[[^\]]*\]\[[^\]]*\]/g,
-      " "
-    )
+    .replace(/!\[[^\]]*\]\s*\[[^\]]*\]/g, " ")
 
     // Remove raw HTML images.
-    .replace(
-      /<img\b[^>]*>/gi,
-      " "
-    )
+    .replace(/<img\b[^>]*>/gi, " ")
 
-    // Remove figure tags.
-    .replace(
-      /<\/?figure\b[^>]*>/gi,
-      " "
-    )
+    // Remove figure HTML.
+    .replace(/<\/?figure\b[^>]*>/gi, " ")
 
     // Keep visible Markdown link text.
-    .replace(
-      /\[([^\]]+)\]\(\s*<?[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g,
-      "$1"
-    )
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
 
-    // Reference-style links.
-    .replace(
-      /\[([^\]]+)\]\[[^\]]*\]/g,
-      "$1"
-    )
+    // Remove remaining HTML.
+    .replace(/<[^>]+>/g, " ")
 
-    // Remove raw HTML tags.
-    .replace(
-      /<[^>]+>/g,
-      " "
-    )
+    // Remove common Markdown formatting.
+    .replace(/[#>*_`~]/g, " ")
 
-    // Remove Markdown formatting.
-    .replace(
-      /[#>*_`~]/g,
-      " "
-    )
+    // Remove Markdown link/reference remnants.
+    .replace(/\]\s*\(/g, " ")
 
     // Normalize whitespace.
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function findContentMatch(
-  content: string,
-  searchTerm: string
-): SearchMatch | null {
-  const cleanedContent =
-    cleanSearchContent(content);
-
-  const term = searchTerm.trim();
-
-  if (!cleanedContent || !term) {
-    return null;
-  }
-
-  const lowerContent =
-    cleanedContent.toLowerCase();
-
-  const lowerTerm =
-    term.toLowerCase();
-
-  const matchIndex =
-    lowerContent.indexOf(lowerTerm);
-
-  if (matchIndex === -1) {
-    return null;
-  }
-
-  const sentenceStart =
-    findSentenceStart(
-      cleanedContent,
-      matchIndex
-    );
-
-  const sentenceEnd =
-    findSentenceEnd(
-      cleanedContent,
-      matchIndex + term.length
-    );
-
-  const sentence =
-    cleanedContent
-      .slice(sentenceStart, sentenceEnd)
-      .trim();
-
-  if (!sentence) {
-    return null;
-  }
-
-  const localMatchIndex =
-    sentence
-      .toLowerCase()
-      .indexOf(lowerTerm);
-
-  if (localMatchIndex === -1) {
-    return null;
-  }
-
-  let before =
-    sentence.slice(
-      0,
-      localMatchIndex
-    );
-
-  const match =
-    sentence.slice(
-      localMatchIndex,
-      localMatchIndex + term.length
-    );
-
-  let after =
-    sentence.slice(
-      localMatchIndex + term.length
-    );
-
-  const maxBefore = 70;
-  const maxAfter = 90;
-
-  if (before.length > maxBefore) {
-    before =
-      `…${before
-        .slice(-maxBefore)
-        .trim()}`;
-  } else if (sentenceStart > 0) {
-    before =
-      `…${before.trim()}`;
-  }
-
-  if (after.length > maxAfter) {
-    after =
-      `${after
-        .slice(0, maxAfter)
-        .trim()}…`;
-  } else if (
-    sentenceEnd < cleanedContent.length
-  ) {
-    after =
-      `${after.trim()} …`;
-  }
-
-  return {
-    before,
-    match,
-    after,
-  };
-}
-
-function findSentenceStart(
-  text: string,
-  index: number
-) {
-  for (let i = index - 1; i >= 0; i--) {
-    const char = text[i];
-
-    if (
-      char === "." ||
-      char === "!" ||
-      char === "?"
-    ) {
-      return i + 1;
-    }
-  }
-
-  return 0;
-}
-
-function findSentenceEnd(
-  text: string,
-  index: number
-) {
-  for (let i = index; i < text.length; i++) {
-    const char = text[i];
-
-    if (
-      char === "." ||
-      char === "!" ||
-      char === "?"
-    ) {
-      return i + 1;
-    }
-  }
-
-  return text.length;
-}
-
-function formatDate(value?: string) {
-  if (!value) return "";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 }
