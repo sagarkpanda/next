@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 type SearchItem = {
   title: string;
@@ -12,6 +12,12 @@ type SearchItem = {
   categories: string[];
   route: string;
   kind: string;
+};
+
+type SearchMatch = {
+  before: string;
+  match: string;
+  after: string;
 };
 
 export default function SearchPageClient() {
@@ -92,22 +98,33 @@ export default function SearchPageClient() {
             <strong>{q}</strong>.
           </p>
 
-          {matches.map((item) => (
-            <Link
-              className="search-result"
-              key={`${item.kind}-${item.route}`}
-              href={item.route}
-            >
-              <span className="search-result-kind">
-                BLOG
-              </span>
+          {matches.map((item) => {
+            const match = findContentMatch(item, q);
 
-              <div>
-                <h2>{item.title}</h2>
-                <p>{item.description}</p>
-              </div>
-            </Link>
-          ))}
+            return (
+              <Link
+                className="search-result"
+                key={`${item.kind}-${item.route}`}
+                href={item.route}
+              >
+                <span className="search-result-kind">BLOG</span>
+
+                <div>
+                  <h2>{item.title}</h2>
+
+                  {match ? (
+                    <p>
+                      {match.before}
+                      <mark>{match.match}</mark>
+                      {match.after}
+                    </p>
+                  ) : (
+                    <p>{item.description}</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
 
           {!matches.length && (
             <p className="empty-state">
@@ -122,6 +139,89 @@ export default function SearchPageClient() {
       )}
     </main>
   );
+}
+
+function findContentMatch(
+  item: SearchItem,
+  searchTerm: string
+): SearchMatch | null {
+  const content = item.content || "";
+  const term = searchTerm.trim();
+
+  if (!content || !term) return null;
+
+  const lowerContent = content.toLowerCase();
+  const lowerTerm = term.toLowerCase();
+
+  const index = lowerContent.indexOf(lowerTerm);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const contextBefore = 95;
+  const contextAfter = 140;
+
+  let start = Math.max(0, index - contextBefore);
+  let end = Math.min(
+    content.length,
+    index + term.length + contextAfter
+  );
+
+  /*
+   * Prefer starting at a natural boundary instead of cutting
+   * directly through a word.
+   */
+  if (start > 0) {
+    const boundary = content.slice(start, index).search(/[\s.!?,;:]\S*$/);
+
+    if (boundary >= 0) {
+      start += boundary + 1;
+    }
+  }
+
+  /*
+   * Prefer ending at a natural boundary as well.
+   */
+  if (end < content.length) {
+    const afterMatch = content.slice(index + term.length, end);
+    const boundary = afterMatch.search(/[\s.!?,;:]/);
+
+    if (boundary >= 0) {
+      end = index + term.length + boundary;
+    }
+  }
+
+  let before = content.slice(start, index);
+  const match = content.slice(index, index + term.length);
+  let after = content.slice(index + term.length, end);
+
+  before = cleanExcerpt(before);
+  after = cleanExcerpt(after);
+
+  if (start > 0) {
+    before = `…${before}`;
+  }
+
+  if (end < content.length) {
+    after = `${after}…`;
+  }
+
+  return {
+    before,
+    match,
+    after,
+  };
+}
+
+function cleanExcerpt(value: string) {
+  return value
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[#>*_`~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function XIcon() {

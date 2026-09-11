@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +13,12 @@ type SearchItem = {
   categories: string[];
   route: string;
   kind: string;
+};
+
+type SearchMatch = {
+  before: string;
+  match: string;
+  after: string;
 };
 
 const sections = [
@@ -46,6 +52,7 @@ export default function SearchButton() {
     };
 
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
@@ -69,6 +76,7 @@ export default function SearchButton() {
     e.preventDefault();
 
     const q = query.trim();
+
     if (!q) return;
 
     closeSearch();
@@ -78,28 +86,31 @@ export default function SearchButton() {
   const normalized = query.trim().toLowerCase();
 
   const filteredSections = sections.filter(([name]) =>
-    !normalized ? true : name.toLowerCase().includes(normalized),
+    !normalized
+      ? true
+      : name.toLowerCase().includes(normalized)
   );
 
-  // The site search intentionally searches blog content only.
-  const results = normalized
-    ? index
-        .filter((item) => item.kind === "Blog")
-        .filter((item) => {
-          const haystack = [
-            item.title,
-            item.description,
-            item.content,
-            ...item.tags,
-            ...item.categories,
-          ]
-            .join(" ")
-            .toLowerCase();
+  const results = useMemo(() => {
+    if (!normalized) return [];
 
-          return haystack.includes(normalized);
-        })
-        .slice(0, 8)
-    : [];
+    return index
+      .filter((item) => item.kind === "Blog")
+      .filter((item) => {
+        const haystack = [
+          item.title,
+          item.description,
+          item.content,
+          ...item.tags,
+          ...item.categories,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return haystack.includes(normalized);
+      })
+      .slice(0, 8);
+  }, [index, normalized]);
 
   return (
     <>
@@ -190,38 +201,55 @@ export default function SearchButton() {
                     : "no matching blog posts"}
                 </div>
 
-                {results.map((item) => (
-                  <Link
-                    key={`${item.kind}-${item.route}`}
-                    href={item.route}
-                    onClick={closeSearch}
-                  >
-                    <span>
-                      {item.title}
-                      <small>Blog</small>
-                    </span>
-                    <span>↗</span>
-                  </Link>
-                ))}
+                {results.map((item) => {
+                  const match = findContentMatch(item, query);
 
-                {!results.length && filteredSections.length > 0 && (
-                  <>
-                    <div className="search-suggestions-title">
-                      matching sections
-                    </div>
+                  return (
+                    <Link
+                      key={`${item.kind}-${item.route}`}
+                      href={item.route}
+                      onClick={closeSearch}
+                    >
+                      <span>
+                        {item.title}
 
-                    {filteredSections.map(([name, href]) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={closeSearch}
-                      >
-                        {name}
-                        <span>↗</span>
-                      </Link>
-                    ))}
-                  </>
-                )}
+                        {match && (
+                          <small className="search-match-preview">
+                            {match.before}
+                            <mark>{match.match}</mark>
+                            {match.after}
+                          </small>
+                        )}
+
+                        {!match && (
+                          <small>Blog</small>
+                        )}
+                      </span>
+
+                      <span>↗</span>
+                    </Link>
+                  );
+                })}
+
+                {!results.length &&
+                  filteredSections.length > 0 && (
+                    <>
+                      <div className="search-suggestions-title">
+                        matching sections
+                      </div>
+
+                      {filteredSections.map(([name, href]) => (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={closeSearch}
+                        >
+                          {name}
+                          <span>↗</span>
+                        </Link>
+                      ))}
+                    </>
+                  )}
 
                 <button
                   type="button"
@@ -241,4 +269,86 @@ export default function SearchButton() {
       )}
     </>
   );
+}
+
+function findContentMatch(
+  item: SearchItem,
+  searchTerm: string
+): SearchMatch | null {
+  const content = item.content || "";
+  const term = searchTerm.trim();
+
+  if (!content || !term) return null;
+
+  const lowerContent = content.toLowerCase();
+  const lowerTerm = term.toLowerCase();
+
+  const index = lowerContent.indexOf(lowerTerm);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const contextBefore = 70;
+  const contextAfter = 100;
+
+  let start = Math.max(0, index - contextBefore);
+  let end = Math.min(
+    content.length,
+    index + term.length + contextAfter
+  );
+
+  if (start > 0) {
+    const boundary = content
+      .slice(start, index)
+      .search(/[\s.!?,;:]\S*$/);
+
+    if (boundary >= 0) {
+      start += boundary + 1;
+    }
+  }
+
+  if (end < content.length) {
+    const afterMatch = content.slice(
+      index + term.length,
+      end
+    );
+
+    const boundary = afterMatch.search(/[\s.!?,;:]/);
+
+    if (boundary >= 0) {
+      end = index + term.length + boundary;
+    }
+  }
+
+  let before = content.slice(start, index);
+  const match = content.slice(index, index + term.length);
+  let after = content.slice(index + term.length, end);
+
+  before = cleanExcerpt(before);
+  after = cleanExcerpt(after);
+
+  if (start > 0) {
+    before = `…${before}`;
+  }
+
+  if (end < content.length) {
+    after = `${after}…`;
+  }
+
+  return {
+    before,
+    match,
+    after,
+  };
+}
+
+function cleanExcerpt(value: string) {
+  return value
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[#>*_`~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

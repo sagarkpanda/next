@@ -2055,6 +2055,28 @@ html.dark .hljs-deletion{
   color:var(--accent);
 }
 
+.search-result mark,
+.search-suggestions mark{
+  background:color-mix(in srgb,var(--accent) 22%,transparent);
+  color:var(--text);
+  border-radius:3px;
+  padding:1px 3px;
+}
+
+.search-match-preview{
+  display:block;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.5;
+  margin-top:4px;
+  max-width:520px;
+  overflow:hidden;
+}
+
+.search-match-preview mark{
+  font-size:inherit;
+}
+
 
 /* =========================================================
    MAIN SEARCH PAGE
