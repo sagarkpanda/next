@@ -41,7 +41,10 @@ export default function SearchButton() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "k"
+      ) {
         e.preventDefault();
         setOpen(true);
       }
@@ -53,14 +56,17 @@ export default function SearchButton() {
 
     window.addEventListener("keydown", onKey);
 
-    return () => window.removeEventListener("keydown", onKey);
+    return () =>
+      window.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
     if (!open || loaded) return;
 
     fetch("/search-index.json")
-      .then((response) => (response.ok ? response.json() : []))
+      .then((response) =>
+        response.ok ? response.json() : []
+      )
       .then((data) => {
         setIndex(Array.isArray(data) ? data : []);
         setLoaded(true);
@@ -80,16 +86,20 @@ export default function SearchButton() {
     if (!q) return;
 
     closeSearch();
-    router.push(`/search/?q=${encodeURIComponent(q)}`);
+
+    router.push(
+      `/search/?q=${encodeURIComponent(q)}`
+    );
   };
 
-  const normalized = query.trim().toLowerCase();
+  const normalized =
+    query.trim().toLowerCase();
 
-  const filteredSections = sections.filter(([name]) =>
-    !normalized
-      ? true
-      : name.toLowerCase().includes(normalized)
-  );
+  const filteredSections =
+    sections.filter(([name]) =>
+      !normalized ||
+      name.toLowerCase().includes(normalized)
+    );
 
   const results = useMemo(() => {
     if (!normalized) return [];
@@ -97,10 +107,13 @@ export default function SearchButton() {
     return index
       .filter((item) => item.kind === "Blog")
       .filter((item) => {
+        const searchableContent =
+          cleanSearchContent(item.content);
+
         const haystack = [
           item.title,
           item.description,
-          item.content,
+          searchableContent,
           ...item.tags,
           ...item.categories,
         ]
@@ -157,7 +170,9 @@ export default function SearchButton() {
                 <input
                   autoFocus
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) =>
+                    setQuery(e.target.value)
+                  }
                   placeholder="Search blog posts..."
                   aria-label="Search blog posts"
                 />
@@ -202,7 +217,11 @@ export default function SearchButton() {
                 </div>
 
                 {results.map((item) => {
-                  const match = findContentMatch(item, query);
+                  const match =
+                    findContentMatch(
+                      item.content,
+                      query
+                    );
 
                   return (
                     <Link
@@ -213,15 +232,15 @@ export default function SearchButton() {
                       <span>
                         {item.title}
 
-                        {match && (
+                        {match ? (
                           <small className="search-match-preview">
                             {match.before}
-                            <mark>{match.match}</mark>
+                            <mark>
+                              {match.match}
+                            </mark>
                             {match.after}
                           </small>
-                        )}
-
-                        {!match && (
+                        ) : (
                           <small>Blog</small>
                         )}
                       </span>
@@ -238,16 +257,18 @@ export default function SearchButton() {
                         matching sections
                       </div>
 
-                      {filteredSections.map(([name, href]) => (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={closeSearch}
-                        >
-                          {name}
-                          <span>↗</span>
-                        </Link>
-                      ))}
+                      {filteredSections.map(
+                        ([name, href]) => (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={closeSearch}
+                          >
+                            {name}
+                            <span>↗</span>
+                          </Link>
+                        )
+                      )}
                     </>
                   )}
 
@@ -262,7 +283,8 @@ export default function SearchButton() {
             )}
 
             <div className="search-hint">
-              <span>Enter</span> search <span>Esc</span> close
+              <span>Enter</span> search{" "}
+              <span>Esc</span> close
             </div>
           </div>
         </div>
@@ -271,69 +293,188 @@ export default function SearchButton() {
   );
 }
 
+function cleanSearchContent(content: string) {
+  return content
+    // Remove fenced code blocks.
+    .replace(
+      /```[\s\S]*?```/g,
+      " "
+    )
+
+    // Remove Hugo figure shortcodes.
+    .replace(
+      /\{\{<\s*figure\b[\s\S]*?>\}\}/gi,
+      " "
+    )
+
+    // Remove Markdown images.
+    .replace(
+      /!\[[^\]]*\]\(\s*(?:<[^>]*>|[^)\s]+)(?:\s+["'][^"']*["'])?\s*\)/g,
+      " "
+    )
+
+    // Remove reference-style Markdown images.
+    .replace(
+      /!\[[^\]]*\]\[[^\]]*\]/g,
+      " "
+    )
+
+    // Remove raw HTML images.
+    .replace(
+      /<img\b[^>]*>/gi,
+      " "
+    )
+
+    // Remove figure tags.
+    .replace(
+      /<\/?figure\b[^>]*>/gi,
+      " "
+    )
+
+    // Keep Markdown link text but remove its URL.
+    .replace(
+      /\[([^\]]+)\]\(\s*<?[^)\s>]+>?(?:\s+["'][^"']*["'])?\s*\)/g,
+      "$1"
+    )
+
+    // Reference-style links.
+    .replace(
+      /\[([^\]]+)\]\[[^\]]*\]/g,
+      "$1"
+    )
+
+    // Remove HTML tags.
+    .replace(
+      /<[^>]+>/g,
+      " "
+    )
+
+    // Remove Markdown formatting.
+    .replace(
+      /[#>*_`~]/g,
+      " "
+    )
+
+    // Normalize whitespace.
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function findContentMatch(
-  item: SearchItem,
+  content: string,
   searchTerm: string
 ): SearchMatch | null {
-  const content = item.content || "";
+  const cleanedContent =
+    cleanSearchContent(content);
+
   const term = searchTerm.trim();
 
-  if (!content || !term) return null;
-
-  const lowerContent = content.toLowerCase();
-  const lowerTerm = term.toLowerCase();
-
-  const index = lowerContent.indexOf(lowerTerm);
-
-  if (index === -1) {
+  if (!cleanedContent || !term) {
     return null;
   }
 
-  const contextBefore = 70;
-  const contextAfter = 100;
+  const lowerContent =
+    cleanedContent.toLowerCase();
 
-  let start = Math.max(0, index - contextBefore);
-  let end = Math.min(
-    content.length,
-    index + term.length + contextAfter
+  const lowerTerm =
+    term.toLowerCase();
+
+  const matchIndex =
+    lowerContent.indexOf(lowerTerm);
+
+  if (matchIndex === -1) {
+    return null;
+  }
+
+  const sentences =
+    splitIntoSentences(cleanedContent);
+
+  let currentSentenceIndex = -1;
+  let currentOffset = 0;
+
+  for (let i = 0; i < sentences.length; i++) {
+    const sentence = sentences[i];
+
+    const sentenceStart =
+      currentOffset;
+
+    const sentenceEnd =
+      sentenceStart + sentence.length;
+
+    if (
+      matchIndex >= sentenceStart &&
+      matchIndex < sentenceEnd
+    ) {
+      currentSentenceIndex = i;
+      break;
+    }
+
+    currentOffset = sentenceEnd;
+  }
+
+  if (currentSentenceIndex === -1) {
+    return null;
+  }
+
+  /*
+   * Two complete sentences before the match,
+   * the matching sentence,
+   * and two complete sentences after it.
+   */
+  const startSentence = Math.max(
+    0,
+    currentSentenceIndex - 2
   );
 
-  if (start > 0) {
-    const boundary = content
-      .slice(start, index)
-      .search(/[\s.!?,;:]\S*$/);
+  const endSentence = Math.min(
+    sentences.length,
+    currentSentenceIndex + 3
+  );
 
-    if (boundary >= 0) {
-      start += boundary + 1;
-    }
-  }
-
-  if (end < content.length) {
-    const afterMatch = content.slice(
-      index + term.length,
-      end
+  const selected =
+    sentences.slice(
+      startSentence,
+      endSentence
     );
 
-    const boundary = afterMatch.search(/[\s.!?,;:]/);
+  const selectedText =
+    selected.join(" ").trim();
 
-    if (boundary >= 0) {
-      end = index + term.length + boundary;
-    }
+  const localMatchIndex =
+    selectedText
+      .toLowerCase()
+      .indexOf(lowerTerm);
+
+  if (localMatchIndex === -1) {
+    return null;
   }
 
-  let before = content.slice(start, index);
-  const match = content.slice(index, index + term.length);
-  let after = content.slice(index + term.length, end);
+  let before =
+    selectedText.slice(
+      0,
+      localMatchIndex
+    );
 
-  before = cleanExcerpt(before);
-  after = cleanExcerpt(after);
+  const match =
+    selectedText.slice(
+      localMatchIndex,
+      localMatchIndex + term.length
+    );
 
-  if (start > 0) {
-    before = `…${before}`;
+  let after =
+    selectedText.slice(
+      localMatchIndex + term.length
+    );
+
+  before = before.trim();
+  after = after.trim();
+
+  if (startSentence > 0) {
+    before = `… ${before}`;
   }
 
-  if (end < content.length) {
-    after = `${after}…`;
+  if (endSentence < sentences.length) {
+    after = `${after} …`;
   }
 
   return {
@@ -343,12 +484,17 @@ function findContentMatch(
   };
 }
 
-function cleanExcerpt(value: string) {
-  return value
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/[#>*_`~-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+function splitIntoSentences(text: string) {
+  const sentences =
+    text.match(
+      /[^.!?]+(?:[.!?]+(?=\s|$)|$)/g
+    ) ?? [];
+
+  return sentences
+    .map((sentence) =>
+      sentence
+        .replace(/\s+/g, " ")
+        .trim()
+    )
+    .filter(Boolean);
 }
