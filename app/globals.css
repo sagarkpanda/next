@@ -728,48 +728,27 @@ html.dark .hljs-deletion{color:#ffa198;background:rgba(248,81,73,.16);}
   color:#ff7b72;
 }
 
-/* Code block header */
-.code-summary{
-  transition:
-    background .2s ease,
-    color .2s ease;
+.code-summary,
+.code-header{
+  color:var(--text);
+  background:var(--panel);
 }
 
-.code-language{
-  color:#111;
-  opacity:1;
-  font-size:10px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  transition:color .2s ease;
+.code-language,
+.code-summary-left > span:last-child{
+  color:var(--text);
 }
 
-.code-summary:hover{
-  background:color-mix(
-    in srgb,
-    var(--accent) 12%,
-    var(--code)
-  );
+.code-summary:hover,
+.code-header:hover{
+  background:color-mix(in srgb,var(--accent) 8%,var(--panel));
 }
 
-.code-summary:hover .code-language{
+.code-summary:hover .code-language,
+.code-header:hover .code-language,
+.code-summary:hover .code-summary-left > span:last-child,
+.code-header:hover .code-summary-left > span:last-child{
   color:var(--accent);
-}
-
-.code-expand-button{
-  transition:
-    background .2s ease,
-    color .2s ease,
-    border-color .2s ease,
-    transform .2s ease;
-}
-
-.code-expand-button:hover{
-  background:var(--accent);
-  color:#061007;
-  border-color:var(--accent);
-  transform:translateY(-1px);
 }
 html.dark .article-body p,html.dark .article-body li{color:#d7e3db;}
 html.dark .post-row p,html.dark .section-lead,html.dark .hero-copy,html.dark .about-grid p,html.dark .timeline ul,html.dark .article-header p{color:#d1ddd5;}
