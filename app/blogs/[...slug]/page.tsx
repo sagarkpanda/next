@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCollection, getItem } from "@/lib/content";
 import BlogArticle from "@/components/BlogArticle";
+import JsonLd from "@/components/JsonLd";
 
 export const dynamicParams = false;
 
@@ -81,9 +82,76 @@ export default async function BlogPage({
     notFound();
   }
 
+  const postTitle = String(post.data.title);
+
+  const description = String(
+    post.data.summary ||
+      post.data.description ||
+      ""
+  );
+
+  const postUrl =
+    `https://next.sagarpanda.com/blogs/${post.slug}/`;
+
+  const cover = post.data.cover
+    ? String(post.data.cover)
+    : "https://next.sagarpanda.com/images/og-image.png";
+
+  const publishedDate = post.data.date
+    ? new Date(String(post.data.date)).toISOString()
+    : undefined;
+
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${postUrl}#article`,
+    headline: postTitle,
+    description,
+    url: postUrl,
+    image: cover,
+    inLanguage: "en",
+
+    author: {
+      "@type": "Person",
+      "@id": "https://next.sagarpanda.com/#person",
+      name: "Sagar Panda",
+      url: "https://next.sagarpanda.com/",
+      jobTitle: "DevOps & Cloud Engineer",
+    },
+
+    publisher: {
+      "@type": "Person",
+      "@id": "https://next.sagarpanda.com/#person",
+      name: "Sagar Panda",
+      url: "https://next.sagarpanda.com/",
+    },
+
+    ...(publishedDate
+      ? {
+          datePublished: publishedDate,
+        }
+      : {}),
+
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
+
+    ...(Array.isArray(post.data.tags) &&
+    post.data.tags.length > 0
+      ? {
+          keywords: post.data.tags.map((tag) => String(tag)),
+        }
+      : {}),
+  };
+
   return (
-    <main className="shell article-shell">
-      <BlogArticle post={post} />
-    </main>
+    <>
+      <JsonLd data={blogPostingSchema} />
+
+      <main className="shell article-shell">
+        <BlogArticle post={post} />
+      </main>
+    </>
   );
 }
