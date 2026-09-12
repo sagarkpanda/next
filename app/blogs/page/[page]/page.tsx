@@ -1,20 +1,30 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCollection } from "@/lib/content";
 import PostCard from "@/components/PostCard";
 import Link from "next/link";
 
 const PAGE_SIZE = 6;
+
 export const dynamicParams = false;
+
+export const metadata: Metadata = {
+  title: "Blogs",
+};
 
 export function generateStaticParams() {
   const totalPages = Math.max(
     1,
-    Math.ceil(getCollection("blogs").length / PAGE_SIZE)
+    Math.ceil(
+      getCollection("blogs").length / PAGE_SIZE
+    )
   );
 
   return Array.from(
     { length: totalPages - 1 },
-    (_, i) => ({ page: String(i + 2) })
+    (_, i) => ({
+      page: String(i + 2),
+    })
   );
 }
 
@@ -26,6 +36,7 @@ export default async function PaginatedBlogs({
   const { page: raw } = await params;
 
   const page = Number(raw);
+
   const posts = getCollection("blogs");
 
   const totalPages = Math.max(
@@ -47,13 +58,17 @@ export default async function PaginatedBlogs({
   );
 
   const firstHref = "/blogs/";
+
   const previousHref =
     page === 2
       ? "/blogs/"
       : `/blogs/page/${page - 1}/`;
 
-  const nextHref = `/blogs/page/${page + 1}/`;
-  const lastHref = `/blogs/page/${totalPages}/`;
+  const nextHref =
+    `/blogs/page/${page + 1}/`;
+
+  const lastHref =
+    `/blogs/page/${totalPages}/`;
 
   return (
     <main className="shell page-shell">
@@ -65,13 +80,17 @@ export default async function PaginatedBlogs({
         <h1>Writing</h1>
 
         <p className="section-lead">
-          Technical notes and hands-on guides covering DevOps, AWS,
-          Kubernetes, Terraform, CI/CD, observability, and security.
+          Technical notes and hands-on guides covering
+          DevOps, AWS, Kubernetes, Terraform, CI/CD,
+          observability, and security.
         </p>
 
         <div className="post-list">
           {current.map((p) => (
-            <PostCard key={p.route} post={p} />
+            <PostCard
+              key={p.route}
+              post={p}
+            />
           ))}
         </div>
 
@@ -80,15 +99,23 @@ export default async function PaginatedBlogs({
           aria-label="Blog pagination"
         >
           {page > 1 ? (
-            <Link href={firstHref}>« first</Link>
+            <Link href={firstHref}>
+              « first
+            </Link>
           ) : (
-            <span className="disabled">« first</span>
+            <span className="disabled">
+              « first
+            </span>
           )}
 
           {page > 1 ? (
-            <Link href={previousHref}>← newer</Link>
+            <Link href={previousHref}>
+              ← newer
+            </Link>
           ) : (
-            <span className="disabled">← newer</span>
+            <span className="disabled">
+              ← newer
+            </span>
           )}
 
           <span>
@@ -96,19 +123,30 @@ export default async function PaginatedBlogs({
           </span>
 
           {page < totalPages ? (
-            <Link href={nextHref}>older →</Link>
+            <Link href={nextHref}>
+              older →
+            </Link>
           ) : (
-            <span className="disabled">older →</span>
+            <span className="disabled">
+              older →
+            </span>
           )}
 
           {page < totalPages ? (
-            <Link href={lastHref}>last »</Link>
+            <Link href={lastHref}>
+              last »
+            </Link>
           ) : (
-            <span className="disabled">last »</span>
+            <span className="disabled">
+              last »
+            </span>
           )}
         </nav>
 
-        <Link className="text-link" href="/blogs/">
+        <Link
+          className="text-link"
+          href="/blogs/"
+        >
           ← all posts
         </Link>
       </section>
